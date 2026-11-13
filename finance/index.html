@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; connect-src https://api.github.com; img-src 'self' data:; base-uri 'none'; form-action 'none'">
+<title>Retirement ledger</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <h1 class="brand">Retirement ledger</h1>
+    <nav class="tabs" aria-label="Sections">
+      <button type="button" class="tab" data-action="tab" data-tab="portfolio" aria-current="page">Portfolio</button>
+      <button type="button" class="tab" data-action="tab" data-tab="plan">Retirement plan</button>
+    </nav>
+    <div class="top-right">
+      <span id="status" class="status" role="status" aria-live="polite"></span>
+      <button type="button" id="save" class="btn primary" data-action="save" hidden>Save changes</button>
+      <button type="button" class="btn quiet" data-action="settings">Settings</button>
+    </div>
+  </div>
+</header>
+<main id="app"><p class="loading">Loading…</p></main>
+<div id="tip" class="tip" hidden></div>
+<dialog id="dlg"></dialog>
+<noscript><p class="loading">This page needs JavaScript.</p></noscript>
+<script src="calc.js"></script>
+<script src="portfolio.js"></script>
+<script src="core.js"></script>
+<script src="view-portfolio.js"></script>
+<script src="view-plan.js"></script>
+<script src="dialogs.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
