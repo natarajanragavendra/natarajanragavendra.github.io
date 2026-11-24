@@ -19,8 +19,17 @@
     var pf = S.pf, nw = pf.netWorth, target = S.target, F = pf.scopes.family, P = S.data.settings.projection;
     var full = Math.max(nw, target, 1), share = target > 0 ? nw / target : null, fillX = nw / full * 100, tx = target / full * 100;
     var years = Math.min(30, Math.max(1, Math.round(+P.years || 4)));
+    /* RSUs: the vests listed in Settings, then a flat yearly amount each August after the last of them. */
+    var futureRsu = P.futureRsu == null ? 3000000 : Math.max(0, +P.futureRsu || 0);
+    var lastVest = pf.vests.reduce(function (y, x) { return Math.max(y, +x.date.slice(0, 4)); }, 0);
+    var rsuFrom = Math.max(lastVest, +pf.today.slice(0, 4) - (+pf.today.slice(5, 7) < 8 ? 1 : 0)) + 1;
+    var vestPlan = [];
+    if (P.includeVests) {
+      vestPlan = pf.vests.slice();
+      if (futureRsu > 0) for (var vy = rsuFrom; vy <= rsuFrom + 60; vy++) vestPlan.push({ date: vy + '-08-15', value: futureRsu });
+    }
     var pr = window.Portfolio.project({ start: nw, target: target, monthly: pf.monthly.family.total, returnRate: P.returnRate,
-      targetGrowth: P.targetGrowth, stepUp: +P.stepUp || 0, vests: P.includeVests ? pf.vests : [], today: pf.today, years: years });
+      targetGrowth: P.targetGrowth, stepUp: +P.stepUp || 0, vests: vestPlan, today: pf.today, years: years });
     S.projection = pr;
     var line = nw >= target
       ? 'You have <b>' + cr(nw) + '</b>, past the <b>' + cr(target) + '</b> your plan needs today.'
@@ -40,7 +49,9 @@
       fact('Going in each month', cr(pf.monthly.family.total), cr(pf.monthly.family.total * 12) + ' a year') + '</dl>';
     var assume = 'At ' + pct(P.returnRate, 1).replace('.0%', '%') + ' a year and ' + cr(pf.monthly.family.total) + ' a month' +
       (+P.stepUp ? ' rising ' + pct(+P.stepUp, 1).replace('.0%', '%') + ' every April' : '') +
-      (P.includeVests && pf.vests.length ? ', with RSU vests added at today’s share price' : '') + ', against a target growing ' + pct(P.targetGrowth, 1).replace('.0%', '%') + ' a year';
+      (P.includeVests ? (pf.vests.length ? ', with the listed RSU vests at today’s share price' + (futureRsu > 0 ? ' and ' + cr(futureRsu) + ' of RSUs each August from ' + rsuFrom : '')
+        : (futureRsu > 0 ? ', with ' + cr(futureRsu) + ' of RSUs each August from ' + rsuFrom : '')) : '') +
+      ', against a target growing ' + pct(P.targetGrowth, 1).replace('.0%', '%') + ' a year';
     h += '<p class="proj">' + (nw >= target ? 'You are past the target today. ' : (pr.reached
       ? assume + ', you cross it in <b>' + App.month(pr.year, pr.month) + '</b>, ' + (pr.months >= 24 ? (pr.months / 12).toFixed(1) + ' years' : pr.months + ' months') + ' from now. '
       : assume + ', you do not cross it within 60 years. ')) +
@@ -50,6 +61,7 @@
         App.field('Target grows a year', 'settings.projection.targetGrowth', { type: 'pct', rerender: 1 }) +
         App.field('Step-up each April', 'settings.projection.stepUp', { type: 'pct', rerender: 1, value: +P.stepUp || 0 }) +
         App.field('Years to show', 'settings.projection.years', { type: 'int', rerender: 1, value: years }) +
+        (P.includeVests ? App.field('RSUs a year from ' + rsuFrom, 'settings.projection.futureRsu', { money: 1, rerender: 1, value: futureRsu }) : '') +
         App.field('Add RSU vests', 'settings.projection.includeVests', { type: 'bool', rerender: 1 }) + '</div>' +
         '<div class="legend"><span><i class="swatch c-3"></i>Net worth</span><span><i class="swatch c-none"></i>Target (dashed)</span></div><div class="chart" id="proj-chart"></div>';
       var end = pr.end, ahead = end.value - end.target;
@@ -215,14 +227,15 @@
       fmt: function (v) { return cr(v, v >= 1e7 ? 1 : 0); }, labelEvery: 1, height: 250 });
     var pc = root.querySelector('#proj-chart'), pr = S.projection;
     if (pc && pr) {
-      var step = Math.max(1, Math.ceil(pr.path.length / 120)), mi = -1, pts = [];
+      var step = Math.max(1, Math.ceil((pr.path.length - 1) / 120)), mi = -1, pts = [];
       pr.path.forEach(function (p, i) {
-        if (i % step && i !== pr.path.length - 1 && i !== pr.crossIndex) return;
-        if (i === pr.crossIndex) mi = pts.length;
+        if (i % step && i !== pr.path.length - 1) return;
         pts.push({ label: App.month(p.year, p.month), a: p.value, b: p.target });
       });
+      if (pr.crossIndex) mi = Math.min(pts.length - 1, Math.round(pr.crossIndex / step));
+      var monthsPerLabel = 12 * Math.max(1, Math.ceil((pr.path.length - 1) / 72));
       App.lineChart(pc, { title: 'Net worth against the growing target', points: pts, names: ['Net worth', 'Target'], fmt: function (v) { return cr(v, 1); },
-        height: 240, labelEvery: step === 1 ? 12 * Math.ceil(pts.length / 73) : null,
+        height: 240, labelEvery: Math.max(1, Math.round(monthsPerLabel / step)),
         marker: mi > 0 ? { i: mi, label: 'Crosses ' + App.month(pr.year, pr.month) } : null });
     }
   };

@@ -69,7 +69,8 @@ main { max-width: 1120px; margin: 0 auto; padding: 28px 20px 80px; }
 dl { margin: 0; }
 .proj { margin-top: 16px; color: var(--ink2); max-width: 62em; }
 .proj b { color: var(--ink); }
-.inline-form { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: end; margin-top: 8px; }
+.inline-form { display: inline-flex; gap: 10px; flex-wrap: wrap; align-items: flex-start; margin-top: 8px; }
+.inline-form .check { padding-top: 28px; }
 
 .seg { display: inline-flex; border: 1px solid var(--rule2); border-radius: 7px; overflow: hidden; background: var(--surface); }
 .seg button { border: 0; background: none; padding: 6px 14px; cursor: pointer; color: var(--ink2); font-weight: 500; }
@@ -200,3 +201,4 @@ textarea.json { min-height: 320px; font-family: ui-monospace, Menlo, Consolas, m
   .hero-line { font-size: 27px; }
   .bar-row .grow { display: none; }
 }
+.inline-form input[type="number"] { height: 36px; font-size: 15px; }
