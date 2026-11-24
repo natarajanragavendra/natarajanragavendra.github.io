@@ -182,7 +182,7 @@
       { method: 'POST', headers: ghHeaders(cfg), body: JSON.stringify({ ref: cfg.branch || 'main' }) }).then(function (res) {
       if (res.status === 204) { App.setStatus('Price job started. Reload prices in a minute or two.'); return; }
       App.setStatus(res.status === 403 || res.status === 404
-        ? 'Could not start the price job: the token needs Actions: read and write. It still runs twice a day on its own.'
+        ? 'Could not start the price job: the token needs Actions: read and write. It still runs three times a day on its own.'
         : 'GitHub returned ' + res.status + ' when starting the price job.', true);
     }).catch(function (e) { App.setStatus(e.message, true); });
   };
@@ -302,7 +302,8 @@
   };
   /* Two lines over time with end labels and a crosshair. o: points [{label, a, b}], names [a, b], fmt */
   App.lineChart = function (el, o) {
-    var W = 720, H = o.height || 220, L = 54, R = 96, T = 12, B = 26, n = o.points.length, e = App.esc;
+    /* Drawn at the width it is shown at, so the text stays readable on a phone. */
+    var W = Math.max(340, Math.min(1100, Math.round(el.clientWidth || 720))), H = o.height || 220, L = 54, R = W < 500 ? 70 : 96, T = 12, B = 26, n = o.points.length, e = App.esc;
     if (n < 2) { el.innerHTML = ''; return; }
     var max = niceMax(Math.max.apply(null, o.points.map(function (p) { return Math.max(p.a, p.b); })));
     var pw = W - L - R, ph = H - T - B, X = function (i) { return L + pw * i / (n - 1); }, Y = function (v) { return T + ph - ph * v / max; };
@@ -311,14 +312,22 @@
       var y = Y(max * g / 4);
       svg += '<line class="' + (g ? 'grid' : 'axis') + '" x1="' + L + '" x2="' + (L + pw) + '" y1="' + y + '" y2="' + y + '"/><text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + e(o.fmt(max * g / 4)) + '</text>';
     }
-    var every = Math.max(1, Math.ceil(n / 6));
-    for (i = 0; i < n; i += every) svg += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + e(o.points[i].label) + '</text>';
+    var every = o.labelEvery || Math.max(1, Math.ceil(n / 6));
+    while (every < n - 1 && pw * every / (n - 1) < 70) every *= 2;
+    for (i = 0; i < n; i += every) svg += '<text x="' + X(i).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="' + (i === 0 ? 'start' : 'middle') + '">' + e(o.points[i].label) + '</text>';
+    var mk = o.marker && o.marker.i >= 0 && o.marker.i < n ? o.marker : null;
+    if (mk) {
+      var mx = X(mk.i), right = mx > L + pw * 0.7;
+      svg += '<line class="mark" x1="' + mx.toFixed(1) + '" x2="' + mx.toFixed(1) + '" y1="' + T + '" y2="' + (T + ph) + '"/>' +
+        '<text class="lbl" x="' + (mx + (right ? -6 : 6)).toFixed(1) + '" y="' + (T + 10) + '" text-anchor="' + (right ? 'end' : 'start') + '">' + e(mk.label) + '</text>';
+    }
     ['a', 'b'].forEach(function (k, j) {
       var d = o.points.map(function (p, i) { return (i ? 'L' : 'M') + X(i).toFixed(1) + ' ' + Y(p[k]).toFixed(1); }).join(' ');
       svg += '<path class="line l-' + k + '" d="' + d + '" fill="none"/>';
     });
     var last = o.points[n - 1], ya = Y(last.a), yb = Y(last.b);
     if (Math.abs(ya - yb) < 14) { if (ya <= yb) { ya -= 7; yb += 7; } else { ya += 7; yb -= 7; } }
+    if (mk) svg += '<circle class="dot" cx="' + X(mk.i).toFixed(1) + '" cy="' + Y(o.points[mk.i].a).toFixed(1) + '" r="4.5"/>';
     svg += '<text class="lbl" x="' + (L + pw + 8) + '" y="' + (ya + 4) + '">' + e(o.names[0]) + '</text><text class="lbl" x="' + (L + pw + 8) + '" y="' + (yb + 4) + '">' + e(o.names[1]) + '</text>';
     svg += '<line class="axis cross" x1="0" x2="0" y1="' + T + '" y2="' + (T + ph) + '" visibility="hidden"/><rect class="hit" x="' + L + '" y="' + T + '" width="' + pw + '" height="' + ph + '"/>';
     el.innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + e(o.title || 'Chart') + '">' + svg + '</svg>';

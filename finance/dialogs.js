@@ -256,7 +256,7 @@
         return '<button type="button" data-action="settings-tab" data-t="' + o[0] + '" aria-pressed="' + (tab === o[0]) + '">' + o[1] + '</button>'; }).join('') + '</div>';
     if (tab === 'data') {
       h += '<h3>' + (cfg.mode === 'github' ? 'Connected to ' + e(cfg.owner + '/' + cfg.repo) : 'Kept in this browser only') + '</h3>' +
-        '<p>' + (cfg.mode === 'github' ? 'Holdings and plan are read from and saved to data.json in that private repository. Prices come from prices.json, which the repository’s “Update prices” job rewrites twice a day.'
+        '<p>' + (cfg.mode === 'github' ? 'Holdings and plan are read from and saved to data.json in that private repository. Prices come from prices.json, which the repository’s “Update prices” job rewrites three times a day.'
           : 'Connect a private GitHub repository to use the same data on every device and to get automatic prices.') + '</p>' + connectFields() +
         '<p class="dim">The token is kept in this browser only and is sent only to api.github.com. Use a fine-grained token limited to that one repository, with Contents: read and write.</p><p class="err" id="c-err" role="alert"></p>' +
         '<p><button type="button" class="btn primary" data-action="connect">' + (cfg.mode === 'github' ? 'Reconnect' : 'Connect') + '</button> ' +
