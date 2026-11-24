@@ -18,8 +18,9 @@
   function hero() {
     var pf = S.pf, nw = pf.netWorth, target = S.target, F = pf.scopes.family, P = S.data.settings.projection;
     var full = Math.max(nw, target, 1), share = target > 0 ? nw / target : null, fillX = nw / full * 100, tx = target / full * 100;
+    var years = Math.min(30, Math.max(1, Math.round(+P.years || 4)));
     var pr = window.Portfolio.project({ start: nw, target: target, monthly: pf.monthly.family.total, returnRate: P.returnRate,
-      targetGrowth: P.targetGrowth, vests: P.includeVests ? pf.vests : [], today: pf.today });
+      targetGrowth: P.targetGrowth, vests: P.includeVests ? pf.vests : [], today: pf.today, years: years });
     S.projection = pr;
     var line = nw >= target
       ? 'You have <b>' + cr(nw) + '</b>, past the <b>' + cr(target) + '</b> your plan needs today.'
@@ -46,8 +47,12 @@
     if (S.showProj) {
       h += '<div class="inline-form">' + App.field('Return a year', 'settings.projection.returnRate', { type: 'pct', rerender: 1 }) +
         App.field('Target grows a year', 'settings.projection.targetGrowth', { type: 'pct', rerender: 1 }) +
+        App.field('Years to show', 'settings.projection.years', { type: 'int', rerender: 1, value: years }) +
         App.field('Add RSU vests', 'settings.projection.includeVests', { type: 'bool', rerender: 1 }) + '</div>' +
         '<div class="legend"><span><i class="swatch c-3"></i>Net worth</span><span><i class="swatch c-none"></i>Target (dashed)</span></div><div class="chart" id="proj-chart"></div>';
+      var end = pr.end, ahead = end.value - end.target;
+      h += '<p class="dim">By ' + App.month(end.year, end.month) + ' that path reaches ' + cr(end.value) + ', against a target of ' + cr(end.target) + ': ' +
+        cr(Math.abs(ahead)) + (ahead >= 0 ? ' ahead' : ' short') + ', or ' + pct(end.value / end.target, 0) + ' of it. Both are in that month’s rupees.</p>';
     }
     return h + '</section>';
   }
@@ -207,9 +212,15 @@
       fmt: function (v) { return cr(v, v >= 1e7 ? 1 : 0); }, labelEvery: 1, height: 250 });
     var pc = root.querySelector('#proj-chart'), pr = S.projection;
     if (pc && pr) {
-      var pts = pr.path.filter(function (p, i) { return i % Math.max(1, Math.ceil(pr.path.length / 120)) === 0 || i === pr.path.length - 1; })
-        .map(function (p) { return { label: App.month(p.year, p.month), a: p.value, b: p.target }; });
-      App.lineChart(pc, { title: 'Net worth against the growing target', points: pts, names: ['Net worth', 'Target'], fmt: function (v) { return cr(v, 1); } });
+      var step = Math.max(1, Math.ceil(pr.path.length / 120)), mi = -1, pts = [];
+      pr.path.forEach(function (p, i) {
+        if (i % step && i !== pr.path.length - 1 && i !== pr.crossIndex) return;
+        if (i === pr.crossIndex) mi = pts.length;
+        pts.push({ label: App.month(p.year, p.month), a: p.value, b: p.target });
+      });
+      App.lineChart(pc, { title: 'Net worth against the growing target', points: pts, names: ['Net worth', 'Target'], fmt: function (v) { return cr(v, 1); },
+        height: 240, labelEvery: step === 1 ? 12 * Math.ceil(pts.length / 73) : null,
+        marker: mi > 0 ? { i: mi, label: 'Crosses ' + App.month(pr.year, pr.month) } : null });
     }
   };
 

@@ -239,22 +239,29 @@
     };
   }
 
-  /* When does the portfolio cross a target that itself grows every year? Monthly steps. */
+  /* When does the portfolio cross a target that itself grows every year? Monthly steps.
+   * o.years sets how far the path runs: it continues past the crossing up to that horizon,
+   * and further if the crossing comes later. */
   function project(o) {
     var v = +o.start, target = +o.target, c = +o.monthly || 0;
     var mr = Math.pow(1 + o.returnRate, 1 / 12) - 1, mg = Math.pow(1 + (o.targetGrowth || 0), 1 / 12) - 1;
     var mstep = o.stepUp || 0, d = String(o.today).split('-').map(Number), y = d[0], m = d[1];
     var vests = {};
     (o.vests || []).forEach(function (x) { if (x.value) { var k = x.date.slice(0, 7); vests[k] = (vests[k] || 0) + x.value; } });
-    var path = [{ year: y, month: m, value: v, target: target }], n = 0;
-    while (v < target && n < 720) {
+    var horizon = Math.max(0, Math.round((+o.years || 0) * 12));
+    var path = [{ year: y, month: m, value: v, target: target }], n = 0, cross = v >= target ? 0 : null;
+    while ((cross === null || n < horizon) && n < 720) {
       m++; if (m > 12) { m = 1; y++; if (mstep) c *= 1 + mstep; }
       n++;
       v = v * (1 + mr) + c + (vests[y + '-' + String(m).padStart(2, '0')] || 0);
       target = target * (1 + mg);
       path.push({ year: y, month: m, value: v, target: target });
+      if (cross === null && v >= target) cross = n;
     }
-    return { reached: v >= target, months: n, year: y, month: m, value: v, target: target, path: path };
+    var at = path[cross === null ? path.length - 1 : cross];
+    path = path.slice(0, Math.max(horizon, cross === null ? horizon : cross) + 1);
+    return { reached: cross !== null, months: cross === null ? n : cross, crossIndex: cross,
+             year: at.year, month: at.month, value: at.value, target: at.target, path: path, end: path[path.length - 1] };
   }
 
   return { compute: compute, xirr: xirr, project: project, priceOf: priceOf, accountValue: accountValue,
