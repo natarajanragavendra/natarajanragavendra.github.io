@@ -306,6 +306,7 @@
     var W = Math.max(340, Math.min(1100, Math.round(el.clientWidth || 720))), H = o.height || 220, L = 54, R = W < 500 ? 70 : 96, T = 12, B = 26, n = o.points.length, e = App.esc;
     if (n < 2) { el.innerHTML = ''; return; }
     var max = niceMax(Math.max.apply(null, o.points.map(function (p) { return Math.max(p.a, p.b); })));
+    L = Math.max(L, Math.round(o.fmt(max).length * 6.8) + 12);
     var pw = W - L - R, ph = H - T - B, X = function (i) { return L + pw * i / (n - 1); }, Y = function (v) { return T + ph - ph * v / max; };
     var svg = '', g, i;
     for (g = 0; g <= 4; g++) {
