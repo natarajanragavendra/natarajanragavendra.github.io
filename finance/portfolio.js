@@ -245,17 +245,18 @@
   function project(o) {
     var v = +o.start, target = +o.target, c = +o.monthly || 0;
     var mr = Math.pow(1 + o.returnRate, 1 / 12) - 1, mg = Math.pow(1 + (o.targetGrowth || 0), 1 / 12) - 1;
-    var mstep = o.stepUp || 0, d = String(o.today).split('-').map(Number), y = d[0], m = d[1];
+    var mstep = +o.stepUp || 0, smonth = o.stepMonth || 4, d = String(o.today).split('-').map(Number), y = d[0], m = d[1];   // contributions rise each April by default
     var vests = {};
     (o.vests || []).forEach(function (x) { if (x.value) { var k = x.date.slice(0, 7); vests[k] = (vests[k] || 0) + x.value; } });
     var horizon = Math.max(0, Math.round((+o.years || 0) * 12));
-    var path = [{ year: y, month: m, value: v, target: target }], n = 0, cross = v >= target ? 0 : null;
+    var path = [{ year: y, month: m, value: v, target: target, monthly: c }], n = 0, cross = v >= target ? 0 : null;
     while ((cross === null || n < horizon) && n < 720) {
-      m++; if (m > 12) { m = 1; y++; if (mstep) c *= 1 + mstep; }
+      m++; if (m > 12) { m = 1; y++; }
+      if (mstep && m === smonth) c *= 1 + mstep;
       n++;
       v = v * (1 + mr) + c + (vests[y + '-' + String(m).padStart(2, '0')] || 0);
       target = target * (1 + mg);
-      path.push({ year: y, month: m, value: v, target: target });
+      path.push({ year: y, month: m, value: v, target: target, monthly: c });
       if (cross === null && v >= target) cross = n;
     }
     var at = path[cross === null ? path.length - 1 : cross];
