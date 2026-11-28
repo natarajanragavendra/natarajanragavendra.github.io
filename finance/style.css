@@ -79,7 +79,7 @@ dl { margin: 0; }
 .bar-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 4px 0 18px; }
 .bar-row .grow { flex: 1; }
 
-section.block { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px 20px; margin-bottom: 18px; }
+.block { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 18px 20px 20px; margin-bottom: 18px; }
 .block > header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
 .block h2 { font: 600 19px/1.3 var(--serif); }
 .block header .sub { color: var(--ink3); font-size: 13px; }
@@ -193,12 +193,27 @@ textarea.json { min-height: 320px; font-family: ui-monospace, Menlo, Consolas, m
 @media (max-width: 560px) {
   .fields, .fields.three { grid-template-columns: 1fr 1fr; }
   .top-in { gap: 8px 14px; } .brand { width: 100%; padding-top: 10px; } .tab { min-height: 40px; }
-  section.block { padding: 14px 14px 16px; }
+  .block { padding: 14px 14px 16px; }
 }
 @media (prefers-reduced-motion: no-preference) { .rail-fill, .drift i { transition: width .35s ease; } }
 @media (max-width: 640px) {
-  .scroll > table { min-width: 600px; }
+  .scroll > table.wide, .scroll > table.edit { min-width: 600px; }
+  td.driftcell { display: none; }
   .hero-line { font-size: 27px; }
   .bar-row .grow { display: none; }
 }
 .inline-form input[type="number"] { height: 36px; font-size: 15px; }
+
+/* Folded sections: closed until asked for */
+details.fold { padding-top: 14px; padding-bottom: 14px; }
+details.fold > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: 'Show'; margin-left: auto; font-size: 13.5px; color: var(--accent); font-weight: 500; }
+details.fold[open] > summary::after { content: 'Hide'; }
+details.fold[open] > summary { margin-bottom: 12px; }
+details.fold > summary:hover h2 { color: var(--accent); }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.filters select { width: auto; max-width: 260px; }
+.linkbtn.small { font-size: 13px; margin-left: 6px; }
+.block { padding-bottom: 14px; }
+.facts .fact dd { font-size: 21px; }
