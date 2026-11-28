@@ -73,13 +73,14 @@
 
   /* One row: value, weight and target. The weight is amber with an up arrow when above its target and blue
    * with a down arrow when below, judged on the figures as shown (one decimal). No target, no colour. */
+  function navText(it) { return '₹' + App.num(it.nav, 2) + (it.usd ? ' <span class="usd">$' + App.num(it.usd, 1) + '</span>' : ''); }
   function row(it) {
     var side = '';
     if (it.target != null) { var n = Math.round(it.now * 1000), t = Math.round(it.target * 1000); side = n > t ? 'over' : n < t ? 'under' : ''; }
     var title = side === 'over' ? 'above target' : side === 'under' ? 'below target' : it.target != null ? 'on target' : 'no target set';
-    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav ? '<span class="nav-inline">NAV ₹' + App.num(it.nav, 2) + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
+    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav ? '<span class="nav-inline">NAV ' + navText(it) + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
       '<td class="n"><span class="w ' + side + '" title="' + title + '">' + pct(it.now) + '</span></td><td class="n dim">' + (it.target != null ? pct(it.target) : '–') + '</td>' +
-      '<td class="n nav">' + (it.nav ? '₹' + App.num(it.nav, 2) : '') + '</td></tr>';
+      '<td class="n nav">' + (it.nav ? navText(it) : '') + '</td></tr>';
   }
   function table(rows, head) {
     return '<table class="mixt">' + (head ? '<thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th><th class="n nav">NAV</th></tr></thead>' : '') +
@@ -119,9 +120,9 @@
     var rows = [];
     S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); }).forEach(function (b) {
       var v = s.buckets[b.id] || 0, funds = s.holdings.filter(function (x) { return x.bucket === b.id; });
-      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null, nav: funds.length === 1 ? funds[0].price : null });
+      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null, nav: funds.length === 1 ? funds[0].price : null, usd: funds.length === 1 ? funds[0].native : null });
       if (funds.length > 1) funds.forEach(function (x) {
-        rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id), nav: x.price });
+        rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id), nav: x.price, usd: x.native });
       });
     });
     if (rows.length) h += sectionHead('Equity', 'Weights within equity; funds within their group') + table(rows);
@@ -129,7 +130,7 @@
     /* Debt: each fund */
     var debt = s.classes.debt, dfunds = s.holdings.filter(function (x) { return x.class === 'debt'; });
     if (dfunds.length) h += sectionHead('Debt', 'Weights within debt') + table(dfunds.map(function (x) {
-      return { name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: debt > 0 ? x.value / debt : 0, target: fundTarget(sid, x.id, x.bucket), nav: x.price };
+      return { name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: debt > 0 ? x.value / debt : 0, target: fundTarget(sid, x.id, x.bucket), nav: x.price, usd: x.native };
     }));
 
     /* EPF/PPF: each account, with its passbook update */
