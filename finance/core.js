@@ -263,6 +263,8 @@
   function tipRow(cls, name, val) { return '<div class="row"><span>' + (cls ? '<i class="swatch ' + cls + '"></i>' : '') + App.esc(name) + '</span><b>' + val + '</b></div>'; }
 
   /* ---------- charts (inline SVG, no library) ---------- */
+  /* How many gridlines make round labels for this top value: 5 for 5, 2.5 and 10 (steps of 1, 0.5, 2), 4 otherwise. */
+  function divisions(max) { var m = max / Math.pow(10, Math.floor(Math.log10(max) + 1e-9)); return Math.abs(m - 5) < 1e-6 || Math.abs(m - 2.5) < 1e-6 || Math.abs(m - 1) < 1e-6 && max >= 10 ? 5 : 4; }
   function niceMax(v) {
     if (!(v > 0)) return 1;
     var p = Math.pow(10, Math.floor(Math.log10(v))), m = v / p;
@@ -270,16 +272,17 @@
   }
   /* Stacked (or single) columns. o: labels, series [{name, cls, values}], fmt, height, labelEvery */
   App.barChart = function (el, o) {
-    var W = 720, H = o.height || 240, L = 54, R = 8, T = 10, B = 26, n = o.labels.length, e = App.esc;
+    var W = Math.max(340, Math.min(1100, Math.round(el.clientWidth || 720))), H = o.height || 240, L = 58, R = 8, T = 10, B = 26, n = o.labels.length, e = App.esc;
     var totals = o.labels.map(function (_, i) { return o.series.reduce(function (t, s) { return t + Math.max(0, s.values[i] || 0); }, 0); });
     var max = niceMax(Math.max.apply(null, totals.concat([0]))), pw = W - L - R, ph = H - T - B, slot = pw / Math.max(n, 1);
-    var bw = Math.max(2, Math.min(34, slot - 2)), svg = '', i, g;
-    for (g = 0; g <= 4; g++) {
-      var y = T + ph - ph * g / 4;
+    var bw = Math.max(2, Math.min(34, slot - 2)), svg = '', i, g, D;
+    for (g = 0, D = divisions(max); g <= D; g++) {
+      var y = T + ph - ph * g / D;
       svg += '<line class="' + (g ? 'grid' : 'axis') + '" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/>' +
-        '<text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + e(o.fmt(max * g / 4)) + '</text>';
+        '<text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + e(o.fmt(max * g / D)) + '</text>';
     }
     var every = o.labelEvery || Math.ceil(n / 12);
+    while (every < n && (W - L - R) / n * every < 44) every *= 2;
     for (i = 0; i < n; i++) {
       var x = L + slot * i + (slot - bw) / 2, y0 = T + ph;
       o.series.forEach(function (s) {
@@ -308,10 +311,10 @@
     var max = niceMax(Math.max.apply(null, o.points.map(function (p) { return Math.max(p.a, p.b); })));
     L = Math.max(L, Math.round(o.fmt(max).length * 6.8) + 12);
     var pw = W - L - R, ph = H - T - B, X = function (i) { return L + pw * i / (n - 1); }, Y = function (v) { return T + ph - ph * v / max; };
-    var svg = '', g, i;
-    for (g = 0; g <= 4; g++) {
-      var y = Y(max * g / 4);
-      svg += '<line class="' + (g ? 'grid' : 'axis') + '" x1="' + L + '" x2="' + (L + pw) + '" y1="' + y + '" y2="' + y + '"/><text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + e(o.fmt(max * g / 4)) + '</text>';
+    var svg = '', g, i, D;
+    for (g = 0, D = divisions(max); g <= D; g++) {
+      var y = Y(max * g / D);
+      svg += '<line class="' + (g ? 'grid' : 'axis') + '" x1="' + L + '" x2="' + (L + pw) + '" y1="' + y + '" y2="' + y + '"/><text x="' + (L - 8) + '" y="' + (y + 4) + '" text-anchor="end">' + e(o.fmt(max * g / D)) + '</text>';
     }
     var every = o.labelEvery || Math.max(1, Math.ceil(n / 6));
     while (every < n - 1 && pw * every / (n - 1) < 70) every *= 2;
