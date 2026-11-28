@@ -91,7 +91,7 @@
 
   function emptyScope(id, name) {
     return { id: id, name: name, classes: { epf: 0, debt: 0, equity: 0 }, buckets: {}, holdings: [], accounts: [],
-             total: 0, flows: { all: [], equity: [], debt: [], epf: [] }, bucketFlows: {}, byYear: {}, missingPrices: [] };
+             total: 0, cash: 0, flows: { all: [], equity: [], debt: [], epf: [] }, bucketFlows: {}, byYear: {}, missingPrices: [] };
   }
 
   function compute(data, prices, today) {
@@ -158,6 +158,12 @@
       var f = fam[id];
       f.xirr = f.price ? xirr(f.flows.concat([{ t: tNow, a: f.value }])) : null;
       delete f.flows; scopes.family.holdings.push(f);
+    });
+
+    /* Cash: the other assets (outside the funds and EPF/PPF). The family counts them all; a person, those marked as theirs. */
+    (data.otherAssets || []).forEach(function (a) {
+      var v = +a.value || 0; scopes.family.cash += v;
+      if (a.person && scopes[a.person]) scopes[a.person].cash += v;
     });
 
     /* EPF and PPF accounts. */

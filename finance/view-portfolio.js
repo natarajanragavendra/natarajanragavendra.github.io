@@ -83,6 +83,7 @@
   function xirrText(v) { return v === 'new' ? '<span title="First bought under a year ago">New</span>' : pct(v); }
   function navText(it) { return it.usd ? '$' + App.num(it.usd, 1) : '₹' + App.num(it.nav, 2); }
   function row(it) {
+    if (it.cash) return '<tr><td><i class="swatch c-cash"></i>' + e(it.name) + '</td><td class="n">' + cr(it.value) + '</td><td class="n"></td><td class="n"></td><td class="n xirr"></td><td class="n nav"></td></tr>';   // weightless
     if (it.total) return '<tr class="total"><td>' + e(it.name) + '</td><td class="n">' + cr(it.value) + '</td><td class="n"></td><td class="n"></td><td class="n xirr"></td><td class="n nav"></td></tr>';
     var side = '';
     if (it.target != null) {   // within the on-target band (Settings, Targets; 2 points unless set) stays plain
@@ -129,7 +130,7 @@
       '<span class="right"><span class="sub">' + (S.pf.latestPrice ? 'Prices of ' + App.date(S.pf.latestPrice) : '') + '</span><button type="button" class="btn small quiet" data-action="reload-prices">Reload prices</button></span></header>';
     h += table(['equity', 'debt', 'epf'].map(function (c) {
       return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] != null ? tc[c] : null };
-    }).concat([{ total: true, name: 'Total', value: tot }]), true);
+    }).concat(s.cash > 0 ? [{ cash: true, name: 'Cash', value: s.cash }] : [], [{ total: true, name: 'Total', value: tot + s.cash }]), true);
 
     /* Equity: buckets, and the funds inside any bucket that holds more than one */
     var rows = [];
