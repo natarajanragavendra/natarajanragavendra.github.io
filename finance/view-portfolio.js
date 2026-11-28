@@ -124,7 +124,7 @@
   function allocation(s, sid) {
     var t = (S.data.targets[sid] || {}), tc = t.classes || {}, te = t.equity || {}, tot = s.total, eq = s.classes.equity;
     /* The heading carries the return of everything in this view; the price date sits with the button that refreshes it. */
-    var h = '<section class="block"><header><h2>Portfolio</h2>' + (s.xirr.all != null ? '<span class="pf-xirr" title="Return a year on all money in and out, funds since sold included">XIRR <b>' + pct(s.xirr.all) + '</b></span>' : '') +
+    var h = '<section class="block"><header><h2>Portfolio</h2>' + (s.xirr.all != null ? '<span class="pf-xirr" title="Return a year on all money in and out, funds since sold included">XIRR ' + pct(s.xirr.all) + '</span>' : '') +
       '<span class="right"><span class="sub">' + (S.pf.latestPrice ? 'Prices of ' + App.date(S.pf.latestPrice) : '') + '</span><button type="button" class="btn small quiet" data-action="reload-prices">Reload prices</button></span></header>';
     h += table(['equity', 'debt', 'epf'].map(function (c) {
       return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] != null ? tc[c] : null };
