@@ -74,11 +74,15 @@
   /* One row: value, weight and target. The weight is amber with an up arrow when above its target and blue
    * with a down arrow when below, judged on the figures as shown (one decimal). No target, no colour. */
   /* Dollar-priced holdings (AMD, the developed-markets fund) show their dollar price only; the rest their rupee NAV. */
+  function onTargetBand() { var b = S.data.settings.onTargetBand; return b == null || !isFinite(+b) ? 0.02 : Math.max(0, +b); }
   function navText(it) { return it.usd ? '$' + App.num(it.usd, 1) : '₹' + App.num(it.nav, 2); }
   function row(it) {
     var side = '';
-    if (it.target != null) { var n = Math.round(it.now * 1000), t = Math.round(it.target * 1000); side = n > t ? 'over' : n < t ? 'under' : ''; }
-    var title = side === 'over' ? 'above target' : side === 'under' ? 'below target' : it.target != null ? 'on target' : 'no target set';
+    if (it.target != null) {   // within the on-target band (Settings, Targets; 2 points unless set) stays plain
+      var n = Math.round(it.now * 1000), t = Math.round(it.target * 1000), band = Math.round(onTargetBand() * 1000);
+      side = n - t > band ? 'over' : t - n > band ? 'under' : '';
+    }
+    var title = side === 'over' ? 'above target' : side === 'under' ? 'below target' : it.target != null ? 'within ' + (onTargetBand() * 100).toFixed(1).replace('.0', '') + ' points of target' : 'no target set';
     return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav ? '<span class="nav-inline">NAV ' + navText(it) + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
       '<td class="n"><span class="w ' + side + '" title="' + title + '">' + pct(it.now) + '</span></td><td class="n dim">' + (it.target != null ? pct(it.target) : '–') + '</td>' +
       '<td class="n nav">' + (it.nav ? navText(it) : '') + '</td></tr>';
