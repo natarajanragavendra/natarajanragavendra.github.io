@@ -28,8 +28,8 @@
       targetGrowth: P.targetGrowth, stepUp: +P.stepUp || 0, vests: vestPlan, today: pf.today, years: years });
     S.projection = pr;
     var line = nw >= target
-      ? 'You have <b>' + cr(nw) + '</b>, past the <b>' + cr(target) + '</b> your plan needs today.'
-      : 'You have <b>' + cr(nw) + '</b> of the <b>' + cr(target) + '</b> your plan needs today.';
+      ? 'You have <b>' + App.crd(nw, 2) + '</b>, past the <b>' + App.crd(target, 2) + '</b> your plan needs today.'
+      : 'You have <b>' + App.crd(nw, 2) + '</b> of the <b>' + App.crd(target, 2) + '</b> your plan needs today.';
     var h = '<section class="hero"><p class="hero-line">' + line + '</p>' +
       '<div class="rail" role="img" aria-label="' + pct(share, 0) + ' of the way to the target">' +
       '<div class="rail-track"><div class="rail-fill" data-w="' + Math.min(100, share * 100).toFixed(2) + '"></div></div>' +

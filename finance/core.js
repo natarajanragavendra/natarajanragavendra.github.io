@@ -16,13 +16,15 @@
   App.MON = MON;
   App.esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
   App.inr = function (v) { return v == null || !isFinite(v) ? '–' : (v < 0 ? '−' : '') + '₹' + nf0.format(Math.abs(Math.round(v))); };
-  App.cr = function (v, d) {
+  /* Crores and lakhs to one decimal everywhere; App.crd takes the decimals explicitly (the headline uses two). */
+  App.crd = function (v, d) {
     if (v == null || !isFinite(v)) return '–';
-    var a = Math.abs(v), s = v < 0 ? '−' : '';
-    if (a >= 9995000) return s + '₹' + (a / 1e7).toFixed(1) + ' Cr';
-    if (a >= 9950) return s + '₹' + (a / 1e5).toFixed(1) + ' L';
+    var a = Math.abs(v), s = v < 0 ? '−' : '', half = 0.5 * Math.pow(10, -d);
+    if (a >= (10 - half) * 1e6) return s + '₹' + (a / 1e7).toFixed(d) + ' Cr';
+    if (a >= (0.1 - half) * 1e5) return s + '₹' + (a / 1e5).toFixed(d) + ' L';
     return s + '₹' + nf0.format(Math.round(a));
   };
+  App.cr = function (v) { return App.crd(v, 1); };
   App.pct = function (v) { return v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + '%'; };   // always one decimal
   App.num = function (v, d) { return v == null || !isFinite(v) ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: d || 0, minimumFractionDigits: d || 0 }).format(v); };
   App.date = function (s) { if (!s) return ''; var p = String(s).slice(0, 10).split('-'); return (+p[2]) + ' ' + MON[+p[1] - 1] + ' ' + p[0]; };
