@@ -130,7 +130,7 @@
       if (pr && pr.date && (!latestPrice || pr.date > latestPrice)) latestPrice = pr.date;
       var h = { person: p.person, id: p.id, name: i.name, class: i.class, bucket: i.bucket || null, units: p.units,
                 price: p.price, priceDate: pr ? pr.date : null, priceSource: pr ? pr.source : null, native: pr ? pr.native : null,
-                value: p.value, invested: -p.net, gain: p.value + p.net, first: p.opened || p.first,
+                value: p.value, invested: -p.net, gain: p.value + p.net, first: p.opened || p.first, since: p.first,
                 xirr: pr ? xirr(p.flows.concat([{ t: tNow, a: p.value }])) : null };
       scopes[p.person].holdings.push(h);
       if (!pr) { scopes[p.person].missingPrices.push(i.name); if (scopes.family.missingPrices.indexOf(i.name) < 0) scopes.family.missingPrices.push(i.name); }
@@ -150,7 +150,7 @@
       scopes[pp.id].holdings.forEach(function (h) {
         var f = fam[h.id];
         if (!f) { f = fam[h.id] = Object.assign({}, h, { person: 'family', flows: [] }); f.units = 0; f.value = 0; f.invested = 0; f.gain = 0; }
-        f.units += h.units; f.value += h.value; f.invested += h.invested; f.gain += h.gain; if (h.first < f.first) f.first = h.first;
+        f.units += h.units; f.value += h.value; f.invested += h.invested; f.gain += h.gain; if (h.first < f.first) f.first = h.first; if (h.since < f.since) f.since = h.since;
         f.flows = f.flows.concat(pos[pp.id + '|' + h.id].flows);
       });
     });
