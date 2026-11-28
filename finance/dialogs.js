@@ -271,11 +271,25 @@
         ['epf', 'debt', 'equity'].map(function (c) { return '<tr><td>' + App.CLASS[c].name + '</td>' + scopes.map(function (s) { return '<td>' + App.cell('targets.' + s[0] + '.classes.' + c, 'pct', 'w-pct') + '</td>'; }).join('') + '</tr>'; }).join('') +
         '<tr><td colspan="' + (scopes.length + 1) + '" class="dim">Within equity</td></tr>' +
         eqB.map(function (b) { return '<tr><td>' + e(b.name) + '</td>' + scopes.map(function (s) { return '<td>' + App.cell('targets.' + s[0] + '.equity.' + b.id, 'pct', 'w-pct') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
+        (function () {   // funds within a group: debt, and any equity group with more than one fund
+          var live = d.instruments.filter(function (x) { return x.price && x.bucket; }), groups = {};
+          live.forEach(function (x) { (groups[x.bucket] = groups[x.bucket] || []).push(x); });
+          var ids = d.buckets.map(function (b) { return b.id; }).filter(function (g) { return groups[g] && (g === 'debt' || groups[g].length > 1); });
+          if (!ids.length) return '';
+          return '<h3>Funds within their group</h3><p>Each group’s funds should add up to 100%. Leave a box blank to have the family’s figure follow from Rahul’s and Anu’s.</p>' +
+            '<div class="scroll"><table class="edit"><thead><tr><th></th>' + scopes.map(function (s) { return '<th>' + e(s[1]) + ' %</th>'; }).join('') + '</tr></thead><tbody>' +
+            ids.map(function (g) {
+              var b = d.buckets.find(function (x) { return x.id === g; });
+              return '<tr><td colspan="' + (scopes.length + 1) + '" class="dim">' + e(b.class === 'debt' ? 'Debt' : b.name) + '</td></tr>' + groups[g].map(function (x) {
+                return '<tr><td>' + e(App.shortName(x.name)) + '</td>' + scopes.map(function (s) { return '<td>' + App.cell('targets.' + s[0] + '.funds.' + x.id, 'pct', 'w-pct', ' data-nullable="1"') + '</td>'; }).join('') + '</tr>';
+              }).join('');
+            }).join('') + '</tbody></table></div>';
+        })() +
         '<h3>Own investment each month, outside EPF</h3><div class="fields">' + d.people.map(function (p, i) { return App.field(p.name, 'people.' + i + '.monthlySelf', { money: 1 }); }).join('') + '</div>' +
         '<h3>Return you assume for each class</h3><div class="fields three">' + App.field('EPF', 'settings.expectedReturns.epf', { type: 'pct' }) + App.field('PPF', 'settings.expectedReturns.ppf', { type: 'pct' }) +
         App.field('Debt funds', 'settings.expectedReturns.debt', { type: 'pct' }) + App.field('Equity', 'settings.expectedReturns.equity', { type: 'pct' }) +
         App.field('Share of debt funds that is equity', 'settings.debtEquityShare', { type: 'pct' }) + '</div>' +
-        '<h3>Glide path</h3><table class="edit"><thead><tr><th>From age</th><th>EPF and PPF %</th><th>Debt %</th><th>Equity %</th><th></th></tr></thead><tbody>' +
+        '<h3>Glide path</h3><table class="edit"><thead><tr><th>From age</th><th>EPF/PPF %</th><th>Debt %</th><th>Equity %</th><th></th></tr></thead><tbody>' +
         d.glidePath.map(function (_, i) { var b = 'glidePath.' + i + '.'; return '<tr><td>' + App.cell(b + 'age', 'int', 'w-year') + '</td><td>' + App.cell(b + 'epf', 'pct', 'w-pct') + '</td><td>' + App.cell(b + 'debt', 'pct', 'w-pct') + '</td><td>' + App.cell(b + 'equity', 'pct', 'w-pct') +
           '</td><td><button type="button" class="btn small quiet danger" data-action="row-del" data-path="glidePath" data-i="' + i + '">Remove</button></td></tr>'; }).join('') +
         '</tbody></table><p><button type="button" class="btn small" data-action="row-add" data-path="glidePath">Add an age</button></p>';

@@ -20,7 +20,7 @@
     if (v == null || !isFinite(v)) return '–';
     var a = Math.abs(v), s = v < 0 ? '−' : '';
     if (a >= 9995000) return s + '₹' + (a / 1e7).toFixed(1) + ' Cr';
-    if (a >= 99950) return s + '₹' + (a / 1e5).toFixed(1) + ' L';
+    if (a >= 9950) return s + '₹' + (a / 1e5).toFixed(1) + ' L';
     return s + '₹' + nf0.format(Math.round(a));
   };
   App.pct = function (v) { return v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + '%'; };   // always one decimal

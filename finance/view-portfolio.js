@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   var App = window.App, S = App.state, e = App.esc, cr = App.cr, inr = App.inr, pct = App.pct;
-  var CLASS = { epf: { n: '1', name: 'EPF and PPF' }, debt: { n: '2', name: 'Debt funds' }, equity: { n: '3', name: 'Equity' } };
+  var CLASS = { epf: { n: '1', name: 'EPF/PPF' }, debt: { n: '2', name: 'Debt' }, equity: { n: '3', name: 'Equity' } };
   App.CLASS = CLASS;
 
   function personName(id) { var p = S.data.people.find(function (x) { return x.id === id; }); return p ? p.name : id; }
@@ -71,54 +71,76 @@
     return h;
   }
 
-  /* Value, weight and target. The weight is amber when above the target and blue when below,
-   * judged on the figures as shown (one decimal), with an arrow so colour is not the only signal. */
-  function mixTable(items, swatches) {
-    return '<table class="mixt"><thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th></tr></thead><tbody>' +
-      items.map(function (it) {
-        var nowR = Math.round(it.now * 1000), tgR = Math.round(it.target * 1000);
-        var side = nowR > tgR ? 'over' : nowR < tgR ? 'under' : '';
-        var label = side === 'over' ? 'above target' : side === 'under' ? 'below target' : 'on target';
-        return '<tr><td>' + (swatches ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + '</td><td class="n">' + cr(it.value) + '</td>' +
-          '<td class="n"><span class="w ' + side + '" title="' + label + '">' + pct(it.now) + '</span></td><td class="n dim">' + pct(it.target) + '</td></tr>';
-      }).join('') + '</tbody></table>';
+  /* One row: value, weight and target. The weight is amber with an up arrow when above its target and blue
+   * with a down arrow when below, judged on the figures as shown (one decimal). No target, no colour. */
+  function row(it) {
+    var side = '';
+    if (it.target != null) { var n = Math.round(it.now * 1000), t = Math.round(it.target * 1000); side = n > t ? 'over' : n < t ? 'under' : ''; }
+    var title = side === 'over' ? 'above target' : side === 'under' ? 'below target' : it.target != null ? 'on target' : 'no target set';
+    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + '</td><td class="n">' + cr(it.value) + '</td>' +
+      '<td class="n"><span class="w ' + side + '" title="' + title + '">' + pct(it.now) + '</span></td><td class="n dim">' + (it.target != null ? pct(it.target) : '–') + '</td></tr>';
+  }
+  function table(rows, head) {
+    return '<table class="mixt">' + (head ? '<thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th></tr></thead>' : '') +
+      '<tbody>' + rows.map(row).join('') + '</tbody></table>';
+  }
+
+  /* Target for one fund within its group (an equity bucket, or debt). People's targets come from Settings; when a
+   * person holds a single fund in the group it is that fund's whole target. The family's targets, unless set,
+   * are the people's targets weighted by what each holds in the group. */
+  function fundTarget(sid, fundId, group) {
+    var own = ((S.data.targets[sid] || {}).funds || {})[fundId];
+    if (own != null) return own;
+    if (sid !== 'family') {
+      var held = (S.pf.scopes[sid] || { holdings: [] }).holdings.filter(function (h) { return h.bucket === group; });
+      return held.length === 1 ? (held[0].id === fundId ? 1 : 0) : null;
+    }
+    var tot = 0, acc = 0;
+    for (var k = 0; k < S.data.people.length; k++) {
+      var pid = S.data.people[k].id, gv = (S.pf.scopes[pid].buckets || {})[group] || 0;
+      if (gv <= 0) continue;
+      var t = fundTarget(pid, fundId, group);
+      if (t == null) return null;
+      acc += gv * t; tot += gv;
+    }
+    return tot > 0 ? acc / tot : null;
   }
 
   function allocation(s, sid) {
     var t = (S.data.targets[sid] || {}), tc = t.classes || {}, te = t.equity || {}, tot = s.total, eq = s.classes.equity;
-    var classes = ['epf', 'debt', 'equity'].map(function (c) {
-      return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] || 0 };
+    var h = '<section class="block"><header><h2>Portfolio</h2><span class="sub">Weights above target in <span class="w over">amber</span>, below in <span class="w under">blue</span>.' +
+      (S.pf.latestPrice ? ' Prices of ' + App.date(S.pf.latestPrice) + '.' : '') + '</span>' +
+      '<span class="right"><button type="button" class="btn small quiet" data-action="reload-prices">Reload prices</button></span></header>';
+    h += table(['equity', 'debt', 'epf'].map(function (c) {
+      return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] != null ? tc[c] : null };
+    }), true);
+
+    /* Equity: buckets, and the funds inside any bucket that holds more than one */
+    var rows = [];
+    S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); }).forEach(function (b) {
+      var v = s.buckets[b.id] || 0, funds = s.holdings.filter(function (x) { return x.bucket === b.id; });
+      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null });
+      if (funds.length > 1) funds.forEach(function (x) {
+        rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id) });
+      });
     });
-    var buckets = S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); })
-      .map(function (b) { var v = s.buckets[b.id] || 0; return { name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] || 0 }; });
-    var h = '<section class="block"><header><h2>Mix</h2><span class="sub">Weights above target in <span class="w over">amber</span>, below in <span class="w under">blue</span></span></header>' + mixTable(classes, true);
-    if (buckets.length) h += '<h3 class="mix-h">Within equity</h3>' + mixTable(buckets, false);
+    if (rows.length) h += sectionHead('Equity', 'Weights within equity; funds within their group') + table(rows);
+
+    /* Debt: each fund */
+    var debt = s.classes.debt, dfunds = s.holdings.filter(function (x) { return x.class === 'debt'; });
+    if (dfunds.length) h += sectionHead('Debt', 'Weights within debt') + table(dfunds.map(function (x) {
+      return { name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: debt > 0 ? x.value / debt : 0, target: fundTarget(sid, x.id, x.bucket) };
+    }));
+
+    /* EPF/PPF: each account, with its passbook update */
+    var epf = s.classes.epf;
+    if (s.accounts.length) h += sectionHead('EPF/PPF', 'Weights within EPF/PPF') + table(s.accounts.map(function (a) {
+      return { name: a.name + (sid === 'family' ? ', ' + personName(a.person) : ''), value: a.value, now: epf > 0 ? a.value / epf : 0, target: null,
+               extra: ' <button type="button" class="linkbtn small" data-action="account" data-id="' + e(a.id) + '">Update</button>' };
+    }));
     return h + '</section>';
   }
-
-  function holdings(s, sid) {
-    var tot = s.total, w = function (v) { return tot > 0 ? pct(v / tot, 1) : '–'; };
-    var h = '<section class="block"><header><h2>Holdings</h2><span class="sub">' + (S.pf.latestPrice ? 'Prices of ' + App.date(S.pf.latestPrice) : '') + '</span>' +
-      '<span class="right"><button type="button" class="btn small quiet" data-action="reload-prices">Reload prices</button></span></header><div class="scroll"><table>' +
-      '<thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">XIRR</th></tr></thead><tbody>';
-    ['equity', 'debt'].forEach(function (c) {
-      var rows = s.holdings.filter(function (x) { return x.class === c; }); if (!rows.length) return;
-      h += '<tr class="group"><td><i class="swatch c-' + CLASS[c].n + '"></i>' + CLASS[c].name + '</td><td class="n">' + cr(s.classes[c]) + '</td><td class="n">' + w(s.classes[c]) + '</td><td class="n">' + pct(s.xirr[c]) + '</td></tr>';
-      rows.forEach(function (x) {
-        var young = x.first && window.Portfolio.monthsBetween(x.first, S.pf.today) < 12;
-        h += '<tr><td>' + e(short(x.name)) + (x.price ? '' : ' <span class="down">no price</span>') + '</td><td class="n">' + cr(x.value) + '</td><td class="n">' + w(x.value) + '</td><td class="n">' +
-          (young ? '<span class="dim" title="Held for under a year">new</span>' : pct(x.xirr)) + '</td></tr>';
-      });
-    });
-    if (s.accounts.length) {
-      h += '<tr class="group"><td><i class="swatch c-1"></i>EPF and PPF</td><td class="n">' + cr(s.classes.epf) + '</td><td class="n">' + w(s.classes.epf) + '</td><td class="n">' + pct(s.xirr.epf) + '</td></tr>';
-      s.accounts.forEach(function (a) {
-        h += '<tr><td>' + e(a.name) + (sid === 'family' ? ' <span class="dim">' + e(personName(a.person)) + '</span>' : '') +
-          ' <button type="button" class="linkbtn small" data-action="account" data-id="' + e(a.id) + '">Update</button></td><td class="n">' + cr(a.value) + '</td><td class="n">' + w(a.value) + '</td><td></td></tr>';
-      });
-    }
-    return h + '</tbody></table></div></section>';
-  }
+  function sectionHead(title, sub) { return '<h3 class="mix-h">' + e(title) + ' <span class="sub">' + e(sub) + '</span></h3>'; }
 
   /* A section that starts closed; its open state survives re-rendering (see App.render). */
   function fold(id, title, sub, body) {
@@ -148,7 +170,7 @@
   function glide() {
     var g = S.data.glidePath; if (!g.length) return '';
     var age = S.plan.age, cur = null; g.forEach(function (r) { if (r.age <= age) cur = r; });
-    return fold('glide', 'Glide path', 'Targets by age; you are ' + age, '<table><thead><tr><th>From age</th><th class="n">EPF and PPF</th><th class="n">Debt</th><th class="n">Equity</th></tr></thead><tbody>' +
+    return fold('glide', 'Glide path', 'Targets by age; you are ' + age, '<table><thead><tr><th>From age</th><th class="n">EPF/PPF</th><th class="n">Debt</th><th class="n">Equity</th></tr></thead><tbody>' +
       g.map(function (r) { return '<tr' + (r === cur ? ' class="now"' : '') + '><td>' + r.age + '</td><td class="n">' + pct(r.epf, 0) + '</td><td class="n">' + pct(r.debt, 0) + '</td><td class="n">' + pct(r.equity, 0) + '</td></tr>'; }).join('') +
       '</tbody></table>');
   }
@@ -190,7 +212,7 @@
     return hero() + notes() + '<div class="bar-row">' + seg + '<span class="grow"></span>' +
       '<button type="button" class="btn" data-action="month-entries">This month’s entries</button>' +
       '<button type="button" class="btn primary" data-action="tx-add">Add a transaction</button></div>' +
-      allocation(s, sid) + holdings(s, sid) + monthly(sid) + vests() + glide() + ledger(sid);
+      allocation(s, sid) + monthly(sid) + vests() + glide() + ledger(sid);
   };
   App.afterPortfolio = function (root) {
     var pc = root.querySelector('#proj-chart'), pr = S.projection;
