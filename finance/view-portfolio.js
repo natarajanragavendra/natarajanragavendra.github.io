@@ -149,14 +149,14 @@
 
     /* EPF/PPF: each account, with its passbook update */
     var epf = s.classes.epf;
-    if (s.accounts.length) h += sectionHead('EPF/PPF', '') + table(s.accounts.map(function (a) {
+    if (s.accounts.length) h += sectionHead('EPF/PPF', s.xirr.epf != null ? 'XIRR ' + pct(s.xirr.epf) : '', 'EPF in the ledger only; PPF has no transactions to measure') + table(s.accounts.map(function (a) {
       return { name: a.name + (sid === 'family' ? ', ' + personName(a.person) : ''), value: a.value, now: epf > 0 ? a.value / epf : 0, target: null,
                extra: ' <button type="button" class="linkbtn small" data-action="account" data-id="' + e(a.id) + '">Update</button>' };
     }));
     return h + '</section>';
   }
   /* A list's heading, with the return of the whole category (all its money in and out, funds since sold included). */
-  function sectionHead(title, sub) { return '<h3 class="mix-h">' + e(title) + (sub ? ' <span class="sub">' + e(sub) + '</span>' : '') + '</h3>'; }
+  function sectionHead(title, sub, tip) { return '<h3 class="mix-h">' + e(title) + (sub ? ' <span class="sub"' + (tip ? ' title="' + e(tip) + '"' : '') + '>' + e(sub) + '</span>' : '') + '</h3>'; }
 
   /* A section that starts closed; its open state survives re-rendering (see App.render). */
   function fold(id, title, sub, body) {
