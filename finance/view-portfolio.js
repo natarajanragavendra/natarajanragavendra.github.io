@@ -37,7 +37,7 @@
     var when = nw >= target ? 'Already there' : pr.reached ? App.month(pr.year, pr.month) : 'Not within 60 years';
     h += '<dl class="facts">' + fact(nw >= target ? 'Target' : 'You cross the target', when, nw < target && pr.reached ? 'in ' + (pr.months >= 24 ? (pr.months / 12).toFixed(1) + ' years' : pr.months + ' months') : '') +
       fact('Return so far', pct(F.xirr.all), 'a year') +
-      (pf.usdInr ? fact('In dollars', '$' + (nw / pf.usdInr / 1e6).toFixed(2) + ' M', '') : '') + '</dl>';
+      (pf.usdInr ? fact('In dollars', '$' + (nw / pf.usdInr / 1e6).toFixed(1) + ' M', '') : '') + '</dl>';
     h += '<p class="proj"><button type="button" class="linkbtn" data-action="toggle-proj" aria-expanded="' + !!S.showProj + '">' + (S.showProj ? 'Hide the path' : 'Show the path and its assumptions') + '</button></p>';
     var assume = pct(P.returnRate, 1).replace('.0%', '%') + ' a year on ' + cr(pf.monthly.family.total) + ' a month' +
       (+P.stepUp ? ' rising ' + pct(+P.stepUp, 1).replace('.0%', '%') + ' every April' : '') +
@@ -71,22 +71,16 @@
     return h;
   }
 
-  /* Two strips, today over target, then the figures. Used for the asset classes and again within equity. */
-  function mixBlock(items, label) {
-    var strip = function (key, cls, labels) {
-      return '<div class="strip' + cls + '">' + items.map(function (it) {
-        var w = (it[key] || 0) * 100; if (w <= 0) return '';
-        return '<i class="' + it.cls + '" data-w="' + w.toFixed(2) + '">' + (labels && w >= 9 ? Math.round(w) + '%' : '') + '</i>';
-      }).join('') + '</div>';
-    };
-    var aria = label + ': ' + items.map(function (it) { return it.name + ' ' + pct(it.now, 0) + ', target ' + pct(it.target, 0); }).join('; ');
-    return '<div class="mix" role="img" aria-label="' + e(aria) + '"><span class="mix-k">Today</span>' + strip('now', '', true) +
-      '<span class="mix-k">Target</span>' + strip('target', ' target', false) + '</div>' +
-      '<table class="mixt"><thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th></tr></thead><tbody>' +
+  /* Value, weight and target. The weight is amber when above the target and blue when below,
+   * judged on the figures as shown (one decimal), with an arrow so colour is not the only signal. */
+  function mixTable(items, swatches) {
+    return '<table class="mixt"><thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th></tr></thead><tbody>' +
       items.map(function (it) {
-        var off = it.now - it.target, flag = Math.abs(off) >= 0.05 ? ' class="off"' : '';
-        return '<tr' + flag + '><td><i class="swatch ' + it.cls + '"></i>' + e(it.name) + '</td><td class="n">' + cr(it.value) + '</td><td class="n">' + pct(it.now, 0) +
-          '</td><td class="n dim">' + pct(it.target, 0) + '</td></tr>';
+        var nowR = Math.round(it.now * 1000), tgR = Math.round(it.target * 1000);
+        var side = nowR > tgR ? 'over' : nowR < tgR ? 'under' : '';
+        var label = side === 'over' ? 'above target' : side === 'under' ? 'below target' : 'on target';
+        return '<tr><td>' + (swatches ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + '</td><td class="n">' + cr(it.value) + '</td>' +
+          '<td class="n"><span class="w ' + side + '" title="' + label + '">' + pct(it.now) + '</span></td><td class="n dim">' + pct(it.target) + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
 
@@ -96,9 +90,9 @@
       return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] || 0 };
     });
     var buckets = S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); })
-      .map(function (b, k) { var v = s.buckets[b.id] || 0; return { name: b.name, cls: 'e-' + (k % 4 + 1), value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] || 0 }; });
-    var h = '<section class="block"><header><h2>Mix</h2><span class="sub">Today’s weights against your targets. Bold: 5 points or more off.</span></header>' + mixBlock(classes, 'Asset classes');
-    if (buckets.length) h += '<h3 class="mix-h">Within equity</h3>' + mixBlock(buckets, 'Within equity');
+      .map(function (b) { var v = s.buckets[b.id] || 0; return { name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] || 0 }; });
+    var h = '<section class="block"><header><h2>Mix</h2><span class="sub">Weights above target in <span class="w over">amber</span>, below in <span class="w under">blue</span></span></header>' + mixTable(classes, true);
+    if (buckets.length) h += '<h3 class="mix-h">Within equity</h3>' + mixTable(buckets, false);
     return h + '</section>';
   }
 
