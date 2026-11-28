@@ -9,8 +9,11 @@
     if (!S.data) { main.innerHTML = App.viewWelcome(S.bootError); return; }
     var open = null, pin = document.getElementById('plan-in');
     if (S.tab === 'plan' && pin) open = Array.prototype.map.call(pin.querySelectorAll('details'), function (d) { return d.open; });
+    S.folds = S.folds || {};
+    main.querySelectorAll('details.fold[id]').forEach(function (d) { S.folds[d.id] = d.open; });
     main.innerHTML = S.tab === 'plan' ? App.viewPlan() : App.viewPortfolio();
     if (open) main.querySelectorAll('#plan-in details').forEach(function (d, i) { if (open[i] !== undefined) d.open = open[i]; });
+    main.querySelectorAll('details.fold[id]').forEach(function (d) { if (S.folds[d.id]) d.open = true; });
     App.applyGeometry(main);
     (S.tab === 'plan' ? App.afterPlan : App.afterPortfolio)(main);
   };

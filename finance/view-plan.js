@@ -102,12 +102,12 @@
     var early = r.goals.filter(function (g) { return g.fundedBy === 'income'; });
     if (early.length) h += '<p class="dim">Paid from income before retirement, so not in the corpus: ' +
       early.map(function (g) { return e(g.name) + ' in ' + g.year + ' (' + cr(g.futureCost) + ')'; }).join(', ') + '.</p>';
-    h += '<details><summary class="linkbtn">Show as a table</summary><div class="scroll"><table><thead><tr><th>Year</th><th class="n">Age</th><th class="n">Living</th><th class="n">Goals</th><th class="n">Other</th><th class="n">From the corpus</th></tr></thead><tbody>' +
+    h += '<details><summary class="linkbtn">Show as a table</summary><div class="scroll"><table class="wide"><thead><tr><th>Year</th><th class="n">Age</th><th class="n">Living</th><th class="n">Goals</th><th class="n">Other</th><th class="n">From the corpus</th></tr></thead><tbody>' +
       cashRows().map(function (x) { return '<tr><td>' + x.year + '</td><td class="n">' + x.age + '</td><td class="n">' + cr(x.living) + '</td><td class="n">' + (x.goals ? cr(x.goals) + ' <span class="dim">' + e(x.names.join(', ')) + '</span>' : '–') +
         '</td><td class="n">' + (x.other ? cr(x.other) : '–') + '</td><td class="n">' + cr(x.total) + '</td></tr>'; }).join('') + '</tbody></table></div></details></section>';
 
     var a = r.atRetirement, act = r.buckets.filter(function (b) { return b.active; });
-    h += '<section class="block"><header><h2>Buckets at retirement</h2><span class="sub">How the ' + cr(r.corpusBucket) + ' is set aside in ' + r.retirementYear + '</span></header><div class="scroll"><table>' +
+    h += '<details class="block fold" id="plan-buckets"><summary><h2>Buckets at retirement</h2><span class="sub">How the ' + cr(r.corpusBucket) + ' is set aside in ' + r.retirementYear + '</span></summary><div class="scroll"><table class="wide">' +
       '<thead><tr><th>Bucket</th><th>Pays for</th><th>Held in</th><th class="n">Set aside</th><th class="n">Pays out</th><th class="n">Return</th><th>Filled by what you have?</th></tr></thead><tbody>';
     act.forEach(function (b) {
       var c = b.coverWithEpf, split = b.index === 2 || b.index === 3 ? ' <span class="dim">' + cr(b.debtPart) + ' debt, ' + cr(b.equityPart) + ' equity</span>' : '';
@@ -116,18 +116,18 @@
         (c == null ? '' : c <= 1 ? '<span class="up">Yes</span> <span class="dim">' + pct(c, 0) + ' used so far</span>' : '<span class="down">Not yet</span> <span class="dim">needs ' + pct(c, 0) + '</span>') + '</td></tr>';
     });
     h += '</tbody></table></div><p class="dim">“What you have” is today’s holdings and EPF grown to ' + r.retirementYear + ' (' + cr(f.total) + '), before new investments. Buckets fill in order.</p>' +
-      '<div class="scroll"><table><thead><tr><th>Mix in ' + r.retirementYear + '</th><th class="n">Cash and FDs</th><th class="n">Longer-term debt</th><th class="n">Equity</th><th class="n">Total</th></tr></thead><tbody>' +
+      '<div class="scroll"><table class="wide"><thead><tr><th>Mix in ' + r.retirementYear + '</th><th class="n">Cash and FDs</th><th class="n">Longer-term debt</th><th class="n">Equity</th><th class="n">Total</th></tr></thead><tbody>' +
       '<tr><td>The buckets need</td><td class="n">' + cr(a.needCash) + '</td><td class="n">' + cr(a.needDebt) + '</td><td class="n">' + cr(a.needEquity) + ' <span class="dim">' + pct(a.needEquity / a.needTotal, 0) + '</span></td><td class="n">' + cr(a.needTotal) + '</td></tr>' +
       '<tr><td>You are heading for</td><td class="n" colspan="2">' + cr(a.projectedDebt) + ' in debt of all kinds</td><td class="n">' + cr(a.projectedEquity) + ' <span class="dim">' + pct(a.projectedEquity / a.projectedTotal, 0) + '</span></td><td class="n">' + cr(a.projectedTotal) + '</td></tr>' +
-      '</tbody></table></div><p class="dim">The second row includes the monthly investment the plan asks for' + (a.projectedEquity > a.needEquity ? '. You would move ' + cr(a.projectedEquity - a.needEquity) + ' from equity to debt when you retire.' : '.') + '</p></section>';
+      '</tbody></table></div><p class="dim">The second row includes the monthly investment the plan asks for' + (a.projectedEquity > a.needEquity ? '. You would move ' + cr(a.projectedEquity - a.needEquity) + ' from equity to debt when you retire.' : '.') + '</p></details>';
 
     var gs = r.goals.filter(function (g) { return g.cost; });
     if (gs.length) {
-      h += '<section class="block"><header><h2>Goals</h2></header><div class="scroll"><table><thead><tr><th>Goal</th><th>Year</th><th class="n">Cost today</th><th class="n">Cost then</th><th>Paid from</th></tr></thead><tbody>' +
+      h += '<details class="block fold" id="plan-goals"><summary><h2>Goals</h2><span class="sub">' + gs.length + ' goals</span></summary><div class="scroll"><table class="wide"><thead><tr><th>Goal</th><th>Year</th><th class="n">Cost today</th><th class="n">Cost then</th><th>Paid from</th></tr></thead><tbody>' +
         gs.slice().sort(function (x, y) { return x.year - y.year; }).map(function (g) {
           return '<tr><td>' + e(g.name) + (g.group ? ' <span class="dim">' + e(g.group) + '</span>' : '') + '</td><td>' + g.year + '</td><td class="n">' + cr(g.cost) + '</td><td class="n">' + cr(g.futureCost) + '</td><td>' +
             ({ income: 'Income, before retirement', corpus: 'The corpus', none: g.include ? 'Outside the plan’s years' : 'Left out of the plan' })[g.fundedBy] + '</td></tr>';
-        }).join('') + '</tbody></table></div></section>';
+        }).join('') + '</tbody></table></div></details>';
     }
     return h;
   }
@@ -156,7 +156,11 @@
   /* Re-draw results only, so the field being typed in keeps its focus. */
   App.renderPlanOutputs = function () {
     var out = document.getElementById('plan-out'); if (!out) return;
-    out.innerHTML = outputs(); App.applyGeometry(out); App.afterPlan(out);
+    S.folds = S.folds || {};
+    out.querySelectorAll('details.fold[id]').forEach(function (d) { S.folds[d.id] = d.open; });
+    out.innerHTML = outputs();
+    out.querySelectorAll('details.fold[id]').forEach(function (d) { if (S.folds[d.id]) d.open = true; });
+    App.applyGeometry(out); App.afterPlan(out);
   };
 
   App.actions['cash-mode'] = function (el) { S.cashMode = el.dataset.mode; App.renderPlanOutputs(); };
