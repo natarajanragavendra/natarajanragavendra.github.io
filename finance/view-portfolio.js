@@ -130,23 +130,24 @@
         rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id), nav: x.price, usd: x.native });
       });
     });
-    if (rows.length) h += sectionHead('Equity', 'Weights within equity; funds within their group') + table(rows);
+    if (rows.length) h += sectionHead('Equity', s.xirr.equity != null ? 'XIRR ' + pct(s.xirr.equity) : '') + table(rows);
 
     /* Debt: each fund */
     var debt = s.classes.debt, dfunds = s.holdings.filter(function (x) { return x.class === 'debt'; });
-    if (dfunds.length) h += sectionHead('Debt', 'Weights within debt') + table(dfunds.map(function (x) {
+    if (dfunds.length) h += sectionHead('Debt', s.xirr.debt != null ? 'XIRR ' + pct(s.xirr.debt) : '') + table(dfunds.map(function (x) {
       return { name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: debt > 0 ? x.value / debt : 0, target: fundTarget(sid, x.id, x.bucket), nav: x.price, usd: x.native };
     }));
 
     /* EPF/PPF: each account, with its passbook update */
     var epf = s.classes.epf;
-    if (s.accounts.length) h += sectionHead('EPF/PPF', 'Weights within EPF/PPF') + table(s.accounts.map(function (a) {
+    if (s.accounts.length) h += sectionHead('EPF/PPF', '') + table(s.accounts.map(function (a) {
       return { name: a.name + (sid === 'family' ? ', ' + personName(a.person) : ''), value: a.value, now: epf > 0 ? a.value / epf : 0, target: null,
                extra: ' <button type="button" class="linkbtn small" data-action="account" data-id="' + e(a.id) + '">Update</button>' };
     }));
     return h + '</section>';
   }
-  function sectionHead(title, sub) { return '<h3 class="mix-h">' + e(title) + ' <span class="sub">' + e(sub) + '</span></h3>'; }
+  /* A list's heading, with the return of the whole category (all its money in and out, funds since sold included). */
+  function sectionHead(title, sub) { return '<h3 class="mix-h">' + e(title) + (sub ? ' <span class="sub">' + e(sub) + '</span>' : '') + '</h3>'; }
 
   /* A section that starts closed; its open state survives re-rendering (see App.render). */
   function fold(id, title, sub, body) {
