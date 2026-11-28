@@ -108,8 +108,7 @@
 
   function allocation(s, sid) {
     var t = (S.data.targets[sid] || {}), tc = t.classes || {}, te = t.equity || {}, tot = s.total, eq = s.classes.equity;
-    var h = '<section class="block"><header><h2>Portfolio</h2><span class="sub">Weights above target in <span class="w over">amber</span>, below in <span class="w under">blue</span>.' +
-      (S.pf.latestPrice ? ' Prices of ' + App.date(S.pf.latestPrice) + '.' : '') + '</span>' +
+    var h = '<section class="block"><header><h2>Portfolio</h2><span class="sub">' + (S.pf.latestPrice ? 'Prices of ' + App.date(S.pf.latestPrice) : '') + '</span>' +
       '<span class="right"><button type="button" class="btn small quiet" data-action="reload-prices">Reload prices</button></span></header>';
     h += table(['equity', 'debt', 'epf'].map(function (c) {
       return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] != null ? tc[c] : null };
