@@ -267,7 +267,8 @@
     }
     if (tab === 'targets') {
       var scopes = [['family', 'Family']].concat(d.people.map(function (p) { return [p.id, p.name]; })), eqB = d.buckets.filter(function (b) { return b.class === 'equity'; });
-      h += '<h3>Target allocation</h3><div class="scroll"><table class="edit"><thead><tr><th></th>' + scopes.map(function (s) { return '<th>' + e(s[1]) + ' %</th>'; }).join('') + '</tr></thead><tbody>' +
+      h += '<h3>On target</h3><div class="fields">' + App.field('Weights this close to target show plain (points)', 'settings.onTargetBand', { type: 'pct', value: d.settings.onTargetBand == null ? 0.02 : d.settings.onTargetBand }) + '</div>' +
+        '<h3>Target allocation</h3><div class="scroll"><table class="edit"><thead><tr><th></th>' + scopes.map(function (s) { return '<th>' + e(s[1]) + ' %</th>'; }).join('') + '</tr></thead><tbody>' +
         ['epf', 'debt', 'equity'].map(function (c) { return '<tr><td>' + App.CLASS[c].name + '</td>' + scopes.map(function (s) { return '<td>' + App.cell('targets.' + s[0] + '.classes.' + c, 'pct', 'w-pct') + '</td>'; }).join('') + '</tr>'; }).join('') +
         '<tr><td colspan="' + (scopes.length + 1) + '" class="dim">Within equity</td></tr>' +
         eqB.map(function (b) { return '<tr><td>' + e(b.name) + '</td>' + scopes.map(function (s) { return '<td>' + App.cell('targets.' + s[0] + '.equity.' + b.id, 'pct', 'w-pct') + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody></table></div>' +
