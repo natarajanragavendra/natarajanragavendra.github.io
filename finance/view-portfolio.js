@@ -9,16 +9,11 @@
   /* Fund names without the plan suffixes every one of them carries. */
   function short(name) { return String(name).replace(/\s+Growth\s+Direct\s+Plan$/i, '').replace(/\s+(Growth|Direct)\s+Plan$/i, ''); }
   function bucketName(id) { var b = S.data.buckets.find(function (x) { return x.id === id; }); return b ? b.name : id; }
-  App.personName = personName; App.bucketName = bucketName;
-  function driftBar(share, target, n) {
-    var max = Math.max(share || 0, target || 0, 0.01) * 1.15;
-    return '<div class="drift" role="img" aria-label="' + pct(share) + ' against a target of ' + pct(target) + '"><i class="c-' + n + '" data-w="' + (share / max * 100).toFixed(2) +
-      '"></i>' + (target != null ? '<b data-x="' + (target / max * 100).toFixed(2) + '"></b>' : '') + '</div>';
-  }
+  App.personName = personName; App.bucketName = bucketName; App.shortName = short;
 
   function hero() {
     var pf = S.pf, nw = pf.netWorth, target = S.target, F = pf.scopes.family, P = S.data.settings.projection;
-    var full = Math.max(nw, target, 1), share = target > 0 ? nw / target : null, fillX = nw / full * 100, tx = target / full * 100;
+    var share = target > 0 ? nw / target : 0;
     var years = Math.min(30, Math.max(1, Math.round(+P.years || 4)));
     /* RSUs: the vests listed in Settings, then a flat yearly amount each August after the last of them. */
     var futureRsu = P.futureRsu == null ? 3000000 : Math.max(0, +P.futureRsu || 0);
@@ -36,16 +31,19 @@
       ? 'You have <b>' + cr(nw) + '</b>, past the <b>' + cr(target) + '</b> your plan needs today.'
       : 'You have <b>' + cr(nw) + '</b> of the <b>' + cr(target) + '</b> your plan needs today.';
     var h = '<section class="hero"><p class="hero-line">' + line + '</p>' +
-      '<div class="rail" role="img" aria-label="' + pct(share) + ' of the target">' +
-      '<div class="rail-track"><div class="rail-fill" data-w="' + fillX.toFixed(2) + '"></div></div>' +
-      '<span class="rail-mark" data-x="' + Math.min(tx, 99.8).toFixed(2) + '"></span>' +
-      '<span class="rail-label' + (tx > 85 ? ' end' : '') + '" data-x="' + tx.toFixed(2) + '">Target today ' + cr(target) + '</span>' +
-      '<span class="rail-note' + (fillX > 20 ? ' end' : '') + '" data-x="' + fillX.toFixed(2) + '">' + pct(share) + ' there</span></div>';
+      '<div class="rail" role="img" aria-label="' + pct(share, 0) + ' of the way to the target">' +
+      '<div class="rail-track"><div class="rail-fill" data-w="' + Math.min(100, share * 100).toFixed(2) + '"></div></div>' +
+      '<span class="rail-pct' + (share < 0.14 ? ' out' : '') + '" data-x="' + Math.min(100, share * 100).toFixed(2) + '">' + pct(share, 0) + '</span></div>';
     var when = nw >= target ? 'Already there' : pr.reached ? App.month(pr.year, pr.month) : 'Not within 60 years';
-    h += '<dl class="facts">' + fact(nw >= target ? 'Target' : 'You cross the target', when, nw < target && pr.reached ? (pr.months >= 24 ? (pr.months / 12).toFixed(1) + ' years' : pr.months + ' months') + ' from now' : '') +
+    h += '<dl class="facts">' + fact(nw >= target ? 'Target' : 'You cross the target', when, nw < target && pr.reached ? 'in ' + (pr.months >= 24 ? (pr.months / 12).toFixed(1) + ' years' : pr.months + ' months') : '') +
       fact('Return so far', pct(F.xirr.all), 'a year') +
       (pf.usdInr ? fact('In dollars', '$' + (nw / pf.usdInr / 1e6).toFixed(2) + ' M', '') : '') + '</dl>';
     h += '<p class="proj"><button type="button" class="linkbtn" data-action="toggle-proj" aria-expanded="' + !!S.showProj + '">' + (S.showProj ? 'Hide the path' : 'Show the path and its assumptions') + '</button></p>';
+    var assume = pct(P.returnRate, 1).replace('.0%', '%') + ' a year on ' + cr(pf.monthly.family.total) + ' a month' +
+      (+P.stepUp ? ' rising ' + pct(+P.stepUp, 1).replace('.0%', '%') + ' every April' : '') +
+      (P.includeVests ? (pf.vests.length ? ', listed RSU vests at today’s price' + (futureRsu > 0 ? ', then ' + cr(futureRsu) + ' of RSUs each August from ' + rsuFrom : '')
+        : (futureRsu > 0 ? ', ' + cr(futureRsu) + ' of RSUs each August from ' + rsuFrom : '')) : '') +
+      ', target growing ' + pct(P.targetGrowth, 1).replace('.0%', '%') + ' a year';
     if (S.showProj) {
       h += '<div class="inline-form">' + App.field('Return a year', 'settings.projection.returnRate', { type: 'pct', rerender: 1 }) +
         App.field('Target grows a year', 'settings.projection.targetGrowth', { type: 'pct', rerender: 1 }) +
@@ -73,23 +71,35 @@
     return h;
   }
 
-  function allocation(s, sid) {
-    var t = (S.data.targets[sid] || {}), tc = t.classes || {}, te = t.equity || {}, tot = s.total;
-    var row = function (cls, name, v, share, tg, n) {
-      return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + name + '</td><td class="n">' + cr(v) + '</td><td class="n">' + pct(share, 0) + '</td><td class="n dim">' + pct(tg, 0) +
-        '</td><td class="driftcell">' + driftBar(share, tg, n) + '</td></tr>';
+  /* Two strips, today over target, then the figures. Used for the asset classes and again within equity. */
+  function mixBlock(items, label) {
+    var strip = function (key, cls, labels) {
+      return '<div class="strip' + cls + '">' + items.map(function (it) {
+        var w = (it[key] || 0) * 100; if (w <= 0) return '';
+        return '<i class="' + it.cls + '" data-w="' + w.toFixed(2) + '">' + (labels && w >= 9 ? Math.round(w) + '%' : '') + '</i>';
+      }).join('') + '</div>';
     };
-    var h = '<section class="block"><header><h2>Allocation</h2><span class="sub">Bar: today’s weight. Tick: target.</span></header><div class="scroll"><table>' +
-      '<thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th><th></th></tr></thead><tbody>';
-    ['epf', 'debt', 'equity'].forEach(function (c) {
-      h += row('', '<i class="swatch c-' + CLASS[c].n + '"></i>' + CLASS[c].name, s.classes[c], tot > 0 ? s.classes[c] / tot : 0, tc[c], CLASS[c].n);
+    var aria = label + ': ' + items.map(function (it) { return it.name + ' ' + pct(it.now, 0) + ', target ' + pct(it.target, 0); }).join('; ');
+    return '<div class="mix" role="img" aria-label="' + e(aria) + '"><span class="mix-k">Today</span>' + strip('now', '', true) +
+      '<span class="mix-k">Target</span>' + strip('target', ' target', false) + '</div>' +
+      '<table class="mixt"><thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th></tr></thead><tbody>' +
+      items.map(function (it) {
+        var off = it.now - it.target, flag = Math.abs(off) >= 0.05 ? ' class="off"' : '';
+        return '<tr' + flag + '><td><i class="swatch ' + it.cls + '"></i>' + e(it.name) + '</td><td class="n">' + cr(it.value) + '</td><td class="n">' + pct(it.now, 0) +
+          '</td><td class="n dim">' + pct(it.target, 0) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function allocation(s, sid) {
+    var t = (S.data.targets[sid] || {}), tc = t.classes || {}, te = t.equity || {}, tot = s.total, eq = s.classes.equity;
+    var classes = ['epf', 'debt', 'equity'].map(function (c) {
+      return { name: CLASS[c].name, cls: 'c-' + CLASS[c].n, value: s.classes[c], now: tot > 0 ? s.classes[c] / tot : 0, target: tc[c] || 0 };
     });
-    var eq = s.classes.equity, ids = S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); });
-    if (ids.length) {
-      h += '<tr class="group"><td colspan="5">Within equity</td></tr>';
-      ids.forEach(function (b) { var v = s.buckets[b.id] || 0; h += row('sub', e(b.name), v, eq > 0 ? v / eq : 0, te[b.id] || 0, '3'); });
-    }
-    return h + '</tbody></table></div></section>';
+    var buckets = S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); })
+      .map(function (b, k) { var v = s.buckets[b.id] || 0; return { name: b.name, cls: 'e-' + (k % 4 + 1), value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] || 0 }; });
+    var h = '<section class="block"><header><h2>Mix</h2><span class="sub">Today’s weights against your targets. Bold: 5 points or more off.</span></header>' + mixBlock(classes, 'Asset classes');
+    if (buckets.length) h += '<h3 class="mix-h">Within equity</h3>' + mixBlock(buckets, 'Within equity');
+    return h + '</section>';
   }
 
   function holdings(s, sid) {

@@ -30,7 +30,7 @@
       if (i.class === 'epf') { epf.push(i); return; }
       (Math.abs(heldUnits(person, i.id)) >= 0.01 ? held : other).push(i);
     });
-    var opt = function (i) { return '<option value="' + e(i.id) + '"' + (selected === i.id ? ' selected' : '') + '>' + e(i.name) + '</option>'; };
+    var opt = function (i) { return '<option value="' + e(i.id) + '"' + (selected === i.id ? ' selected' : '') + '>' + e(App.shortName ? App.shortName(i.name) : i.name) + '</option>'; };
     var byName = function (a, b) { return a.name < b.name ? -1 : 1; };
     return '<option value="">Choose…</option>' +
       (held.length ? '<optgroup label="' + e(App.personName(person)) + ' holds now">' + held.sort(byName).map(opt).join('') + '</optgroup>' : '') +
