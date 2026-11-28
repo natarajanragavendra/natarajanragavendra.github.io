@@ -296,8 +296,9 @@
         '</tbody></table><p><button type="button" class="btn small" data-action="row-add" data-path="glidePath">Add an age</button></p>';
     }
     if (tab === 'assets') {
-      h += '<h3>Other assets</h3><p>Counted in net worth but not in the retirement fund’s allocation.</p><table class="edit"><thead><tr><th>Name</th><th>Value</th><th>In the plan, counts as</th><th></th></tr></thead><tbody>' +
+      h += '<h3>Other assets</h3><p>Counted in net worth and shown as Cash in the Portfolio table, with no weight. Shared assets count for the family only.</p><table class="edit"><thead><tr><th>Name</th><th>Value</th><th>Whose</th><th>In the plan, counts as</th><th></th></tr></thead><tbody>' +
         d.otherAssets.map(function (_, i) { var b = 'otherAssets.' + i + '.'; return '<tr><td>' + App.cell(b + 'name', 'text') + '</td><td>' + App.cell(b + 'value', 'num', 'w-amt') + '</td><td>' +
+          App.select(b + 'person', [['', 'Shared']].concat(d.people.map(function (p) { return [p.id, p.name]; }))) + '</td><td>' +
           App.select(b + 'planAs', [['debt', 'Taxable debt'], ['equity', 'Equity'], ['none', 'Not counted']]) + '</td><td><button type="button" class="btn small quiet danger" data-action="row-del" data-path="otherAssets" data-i="' + i + '">Remove</button></td></tr>'; }).join('') +
         '</tbody></table><p><button type="button" class="btn small" data-action="row-add" data-path="otherAssets">Add an asset</button></p>' +
         '<h3>RSU vests to come</h3><p>Shares after tax withholding. Past dates drop off the list by themselves; record the shares you keep as a transaction.</p><table class="edit"><thead><tr><th>Vest date</th><th>Shares</th><th>Share</th><th></th></tr></thead><tbody>' +
