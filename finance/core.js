@@ -19,11 +19,11 @@
   App.cr = function (v, d) {
     if (v == null || !isFinite(v)) return '–';
     var a = Math.abs(v), s = v < 0 ? '−' : '';
-    if (a >= 9995000) return s + '₹' + (a / 1e7).toFixed(d == null ? 2 : d) + ' Cr';
-    if (a >= 99950) return s + '₹' + (a / 1e5).toFixed(d == null ? (a < 999500 ? 2 : 1) : d) + ' L';
+    if (a >= 9995000) return s + '₹' + (a / 1e7).toFixed(1) + ' Cr';
+    if (a >= 99950) return s + '₹' + (a / 1e5).toFixed(1) + ' L';
     return s + '₹' + nf0.format(Math.round(a));
   };
-  App.pct = function (v, d) { return v == null || !isFinite(v) ? '–' : (v * 100).toFixed(d == null ? 1 : d) + '%'; };
+  App.pct = function (v) { return v == null || !isFinite(v) ? '–' : (v * 100).toFixed(1) + '%'; };   // always one decimal
   App.num = function (v, d) { return v == null || !isFinite(v) ? '–' : new Intl.NumberFormat('en-IN', { maximumFractionDigits: d || 0, minimumFractionDigits: d || 0 }).format(v); };
   App.date = function (s) { if (!s) return ''; var p = String(s).slice(0, 10).split('-'); return (+p[2]) + ' ' + MON[+p[1] - 1] + ' ' + p[0]; };
   App.month = function (y, m) { return MON[m - 1] + ' ' + y; };

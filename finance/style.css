@@ -120,20 +120,16 @@ td .dim, .dim { color: var(--ink3); font-size: 13px; }
 .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 9px; }
 .c-1 { background: var(--s1); } .c-2 { background: var(--s2); } .c-3 { background: var(--s3); } .c-one { background: var(--accent); } .c-none { background: var(--neutral); }
 
-/* The mix: today's weights over the target's, as two strips */
-.mix { display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: center; margin: 4px 0 22px; }
-.mix-k { font-size: 13px; color: var(--ink3); }
-.strip { display: flex; gap: 3px; height: 22px; }
-.strip i { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; min-width: 6px; flex: 0 1 auto; border-radius: 5px; font: 700 12px/1 var(--display); font-style: normal; color: #fff; overflow: hidden; white-space: nowrap; width: 0; }
-.strip.target { height: 10px; }
-.strip.target i { opacity: .38; padding: 0; }
-
-/* Shades of the equity colour for the parts of equity; labels and the table carry their names */
-.e-1 { background: #0e6b4b; } .e-2 { background: var(--s3); } .e-3 { background: #6dcaa5; color: var(--ink) !important; } .e-4 { background: #b3e2cd; color: var(--ink) !important; }
-@media (prefers-color-scheme: dark) { .e-1 { background: #0c6a49; } .e-3 { background: #4fb88f; } .e-4 { background: #93d4b8; } .e-3, .e-4 { color: #0c1c16 !important; } }
-.mix-h { font: 700 16px/1.3 var(--display); margin: 34px 0 12px; }
+/* Mix: weight above target in amber, below in blue, each with an arrow */
+:root { --over: #a35400; --under: #2a55b8; }
+@media (prefers-color-scheme: dark) { :root { --over: #f0b35a; --under: #8fb0ff; } }
+.mix-h { font: 700 16px/1.3 var(--display); margin: 30px 0 8px; }
 table.mixt th.n, table.mixt td.n { width: 112px; }
-table.mixt tr.off td.n:nth-child(3) { color: var(--warn); font-weight: 700; }
+.w.over, .w.under { font-weight: 700; }
+.w.over { color: var(--over); } .w.under { color: var(--under); }
+td .w::after { content: ' \25B2'; font-size: .7em; vertical-align: .12em; visibility: hidden; }
+td .w.over::after { content: ' \25B2'; visibility: visible; }
+td .w.under::after { content: ' \25BC'; visibility: visible; }
 
 /* Folded sections: one line each until opened */
 details.fold { margin: 0; border-bottom: 1px solid var(--rule); }
@@ -251,5 +247,5 @@ textarea.json { min-height: 320px; font-family: ui-monospace, Menlo, Consolas, m
 }
 @media (prefers-reduced-motion: no-preference) {
   .rail-fill { transition: width .6s cubic-bezier(.2, .7, .2, 1); }
-  .drift i, .strip i { transition: width .35s ease; }
+  .drift i { transition: width .35s ease; }
 }
