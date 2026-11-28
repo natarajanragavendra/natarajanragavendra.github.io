@@ -83,12 +83,12 @@
       side = n - t > band ? 'over' : t - n > band ? 'under' : '';
     }
     var title = side === 'over' ? 'above target' : side === 'under' ? 'below target' : it.target != null ? 'within ' + (onTargetBand() * 100).toFixed(1).replace('.0', '') + ' points of target' : 'no target set';
-    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav ? '<span class="nav-inline">NAV ' + navText(it) + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
+    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav ? '<span class="nav-inline">NAV ' + navText(it) + (it.xirr != null ? '<span class="xi">XIRR ' + pct(it.xirr) + '</span>' : '') + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
       '<td class="n"><span class="w ' + side + '" title="' + title + '">' + pct(it.now) + '</span></td><td class="n dim">' + (it.target != null ? pct(it.target) : '–') + '</td>' +
-      '<td class="n nav">' + (it.nav ? navText(it) : '') + '</td></tr>';
+      '<td class="n xirr">' + (it.xirr != null ? pct(it.xirr) : '') + '</td><td class="n nav">' + (it.nav ? navText(it) : '') + '</td></tr>';
   }
   function table(rows, head) {
-    return '<table class="mixt">' + (head ? '<thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th><th class="n nav">NAV</th></tr></thead>' : '') +
+    return '<table class="mixt">' + (head ? '<thead><tr><th></th><th class="n">Value</th><th class="n">Weight</th><th class="n">Target</th><th class="n xirr" title="Return a year on all money in and out of this fund">XIRR</th><th class="n nav">NAV</th></tr></thead>' : '') +
       '<tbody>' + rows.map(row).join('') + '</tbody></table>';
   }
 
@@ -125,9 +125,9 @@
     var rows = [];
     S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); }).forEach(function (b) {
       var v = s.buckets[b.id] || 0, funds = s.holdings.filter(function (x) { return x.bucket === b.id; });
-      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null, nav: funds.length === 1 ? funds[0].price : null, usd: funds.length === 1 ? funds[0].native : null });
+      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null, nav: funds.length === 1 ? funds[0].price : null, usd: funds.length === 1 ? funds[0].native : null, xirr: funds.length === 1 ? funds[0].xirr : null });
       if (funds.length > 1) funds.forEach(function (x) {
-        rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id), nav: x.price, usd: x.native });
+        rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id), nav: x.price, usd: x.native, xirr: x.xirr });
       });
     });
     if (rows.length) h += sectionHead('Equity', s.xirr.equity != null ? 'XIRR ' + pct(s.xirr.equity) : '') + table(rows);
@@ -135,7 +135,7 @@
     /* Debt: each fund */
     var debt = s.classes.debt, dfunds = s.holdings.filter(function (x) { return x.class === 'debt'; });
     if (dfunds.length) h += sectionHead('Debt', s.xirr.debt != null ? 'XIRR ' + pct(s.xirr.debt) : '') + table(dfunds.map(function (x) {
-      return { name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: debt > 0 ? x.value / debt : 0, target: fundTarget(sid, x.id, x.bucket), nav: x.price, usd: x.native };
+      return { name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: debt > 0 ? x.value / debt : 0, target: fundTarget(sid, x.id, x.bucket), nav: x.price, usd: x.native, xirr: x.xirr };
     }));
 
     /* EPF/PPF: each account, with its passbook update */
