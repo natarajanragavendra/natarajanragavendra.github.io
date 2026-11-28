@@ -37,7 +37,7 @@
     var when = nw >= target ? 'Already there' : pr.reached ? App.month(pr.year, pr.month) : 'Not within 60 years';
     h += '<dl class="facts">' + fact(nw >= target ? 'Target' : 'You cross the target', when, nw < target && pr.reached ? 'in ' + (pr.months >= 24 ? (pr.months / 12).toFixed(1) + ' years' : pr.months + ' months') : '') +
       fact('Return so far', pct(F.xirr.all), 'a year') +
-      (pf.usdInr ? fact('In dollars', '$' + (nw / pf.usdInr / 1e6).toFixed(1) + ' M', '') : '') + '</dl>';
+      (pf.usdInr ? fact('In dollars', '$' + (nw / pf.usdInr / 1e6).toFixed(2) + ' M', '') : '') + '</dl>';
     h += '<p class="proj"><button type="button" class="linkbtn" data-action="toggle-proj" aria-expanded="' + !!S.showProj + '">' + (S.showProj ? 'Hide the path' : 'Show the path and its assumptions') + '</button></p>';
     var assume = pct(P.returnRate, 1).replace('.0%', '%') + ' a year on ' + cr(pf.monthly.family.total) + ' a month' +
       (+P.stepUp ? ' rising ' + pct(+P.stepUp, 1).replace('.0%', '%') + ' every April' : '') +
@@ -73,7 +73,8 @@
 
   /* One row: value, weight and target. The weight is amber with an up arrow when above its target and blue
    * with a down arrow when below, judged on the figures as shown (one decimal). No target, no colour. */
-  function navText(it) { return '₹' + App.num(it.nav, 2) + (it.usd ? ' <span class="usd">$' + App.num(it.usd, 1) + '</span>' : ''); }
+  /* Dollar-priced holdings (AMD, the developed-markets fund) show their dollar price only; the rest their rupee NAV. */
+  function navText(it) { return it.usd ? '$' + App.num(it.usd, 1) : '₹' + App.num(it.nav, 2); }
   function row(it) {
     var side = '';
     if (it.target != null) { var n = Math.round(it.now * 1000), t = Math.round(it.target * 1000); side = n > t ? 'over' : n < t ? 'under' : ''; }
