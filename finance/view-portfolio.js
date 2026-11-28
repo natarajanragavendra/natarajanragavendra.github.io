@@ -89,7 +89,7 @@
       side = n - t > band ? 'over' : t - n > band ? 'under' : '';
     }
     var title = side === 'over' ? 'above target' : side === 'under' ? 'below target' : it.target != null ? 'within ' + (onTargetBand() * 100).toFixed(1).replace('.0', '') + ' points of target' : 'no target set';
-    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav ? '<span class="nav-inline">NAV ' + navText(it) + (it.xirr != null ? '<span class="xi">' + (it.xirr === 'new' ? 'New' : 'XIRR ' + pct(it.xirr)) + '</span>' : '') + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
+    return '<tr' + (it.sub ? ' class="sub"' : '') + '><td>' + (it.cls ? '<i class="swatch ' + it.cls + '"></i>' : '') + e(it.name) + (it.extra || '') + (it.nav || it.xirr != null ? '<span class="nav-inline">' + (it.nav ? 'NAV ' + navText(it) : '') + (it.xirr != null ? '<span class="xi' + (it.nav ? ' gap' : '') + '">' + (it.xirr === 'new' ? 'New' : 'XIRR ' + pct(it.xirr)) + '</span>' : '') + '</span>' : '') + '</td><td class="n">' + cr(it.value) + '</td>' +
       '<td class="n"><span class="w ' + side + '" title="' + title + '">' + pct(it.now) + '</span></td><td class="n dim">' + (it.target != null ? pct(it.target) : '–') + '</td>' +
       '<td class="n xirr">' + (it.xirr != null ? xirrText(it.xirr) : '') + '</td><td class="n nav">' + (it.nav ? navText(it) : '') + '</td></tr>';
   }
@@ -119,6 +119,8 @@
     return tot > 0 ? acc / tot : null;
   }
 
+  /* Groups of several funds whose row shows the XIRR of those funds together (the two Nifty 50 index funds). */
+  var COMBINED_XIRR = { nifty: true };
   function allocation(s, sid) {
     var t = (S.data.targets[sid] || {}), tc = t.classes || {}, te = t.equity || {}, tot = s.total, eq = s.classes.equity;
     var h = '<section class="block"><header><h2>Portfolio</h2><span class="sub">' + (S.pf.latestPrice ? 'Prices of ' + App.date(S.pf.latestPrice) : '') + '</span>' +
@@ -131,7 +133,7 @@
     var rows = [];
     S.data.buckets.filter(function (b) { return b.class === 'equity' && ((s.buckets[b.id] || 0) > 0 || te[b.id] > 0); }).forEach(function (b) {
       var v = s.buckets[b.id] || 0, funds = s.holdings.filter(function (x) { return x.bucket === b.id; });
-      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null, nav: funds.length === 1 ? funds[0].price : null, usd: funds.length === 1 ? funds[0].native : null, xirr: funds.length === 1 ? fundXirr(funds[0]) : null });
+      rows.push({ name: b.name, value: v, now: eq > 0 ? v / eq : 0, target: te[b.id] != null ? te[b.id] : null, nav: funds.length === 1 ? funds[0].price : null, usd: funds.length === 1 ? funds[0].native : null, xirr: funds.length === 1 ? fundXirr(funds[0]) : COMBINED_XIRR[b.id] && s.bucketXirr[b.id] != null ? s.bucketXirr[b.id] : null });
       if (funds.length > 1) funds.forEach(function (x) {
         rows.push({ sub: true, name: short(x.name) + (x.price ? '' : ' (no price)'), value: x.value, now: v > 0 ? x.value / v : 0, target: fundTarget(sid, x.id, b.id), nav: x.price, usd: x.native, xirr: fundXirr(x) });
       });

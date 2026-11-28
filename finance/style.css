@@ -138,7 +138,7 @@ table.mixt td.xirr { color: var(--ink2); font-size: 14px; }
 @media (max-width: 640px) {
   table.mixt th.n, table.mixt td.n { width: auto; } table.mixt td.n { padding-left: 8px; }
   table.mixt th.nav, table.mixt td.nav, table.mixt th.xirr, table.mixt td.xirr { display: none; }
-  .nav-inline .xi { margin-left: 10px; }
+  .nav-inline .xi.gap { margin-left: 10px; }
   .nav-inline { display: block; font-size: 12px; color: var(--ink3); margin-top: 1px; white-space: nowrap; }
 }
 .w.over, .w.under { font-weight: 700; }
