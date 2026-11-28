@@ -99,8 +99,7 @@ main { max-width: 960px; margin: 0 auto; padding: 40px 20px 96px; }
 .block h2 { font: 700 22px/1.25 var(--display); letter-spacing: -.01em; }
 .block header .sub { color: var(--ink3); font-size: 13.5px; }
 .block header .right { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: baseline; }
-.pf-xirr { color: var(--ink2); font-size: 15px; }
-.pf-xirr b { font: 700 22px/1.25 var(--display); color: var(--ink); letter-spacing: -.01em; margin-left: 2px; }
+.pf-xirr { font: 700 17px/1.25 var(--display); color: var(--ink); letter-spacing: -.005em; }
 .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; }
 @media (max-width: 860px) { .cols { grid-template-columns: 1fr; } }
 
